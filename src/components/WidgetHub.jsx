@@ -15,7 +15,7 @@ function SunTimer({ onBack }) {
     }, 1000);
     const msInterval = setInterval(() => {
       setMs(Math.floor(Math.random() * 900) + 100);
-    }, 60);
+    }, 50);
     return () => {
       clearInterval(sInterval);
       clearInterval(msInterval);
@@ -32,7 +32,7 @@ function SunTimer({ onBack }) {
       alignItems: 'center', 
       textAlign: 'center', 
       height: '100%', 
-      padding: '0.75rem',
+      padding: '1.5rem',
       fontFamily: 'monospace',
       position: 'relative'
     }}>
@@ -41,83 +41,85 @@ function SunTimer({ onBack }) {
       <div style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',
-        background: 'rgba(255, 176, 0, 0.12)',
-        border: '1px solid rgba(255, 176, 0, 0.5)',
-        padding: '3px 12px',
-        borderRadius: '2px',
+        gap: '10px',
+        background: 'rgba(255, 176, 0, 0.15)',
+        border: '1px solid rgba(255, 176, 0, 0.6)',
+        padding: '5px 16px',
+        borderRadius: '3px',
         color: '#ffb000',
-        fontSize: '0.72rem',
-        letterSpacing: '1.5px',
+        fontSize: '0.85rem',
+        letterSpacing: '2px',
         fontWeight: 'bold',
-        marginBottom: '0.5rem',
-        boxShadow: '0 0 12px rgba(255, 176, 0, 0.25)'
+        marginBottom: '0.8rem',
+        boxShadow: '0 0 15px rgba(255, 176, 0, 0.3)'
       }}>
         <span>⚠</span>
-        <span>DOOMSDAY_CHRONO // SOL-0</span>
+        <span>DOOMSDAY_CHRONOMETER // SOL-0</span>
         <span>⚠</span>
       </div>
 
-      <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.4rem', textShadow: '0 0 10px rgba(255, 176, 0, 0.5)' }}>
+      <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#ffffff', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.6rem', textShadow: '0 0 15px rgba(255, 176, 0, 0.6)' }}>
         Solar Core Collapse
       </div>
 
-      {/* Cyberpunk Display Panel with Cut Corners & Scanlines */}
+      {/* Cyberpunk Display Panel */}
       <div style={{
         position: 'relative',
-        margin: '0.4rem 0',
-        padding: '0.9rem 1.4rem',
-        background: 'linear-gradient(180deg, rgba(20, 16, 8, 0.95) 0%, rgba(10, 8, 4, 0.98) 100%)',
-        border: '1px solid #ffb000',
-        borderRadius: '4px',
-        clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
+        margin: '0.6rem 0',
+        padding: '1.4rem 2rem',
+        background: 'linear-gradient(180deg, rgba(24, 18, 10, 0.96) 0%, rgba(12, 9, 5, 0.99) 100%)',
+        border: '2px solid #ffb000',
+        borderRadius: '6px',
+        clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
         width: '100%',
-        maxWidth: '390px',
-        boxShadow: '0 0 25px rgba(255, 176, 0, 0.2), inset 0 0 20px rgba(255, 176, 0, 0.08)'
+        maxWidth: '560px',
+        boxShadow: '0 0 35px rgba(255, 176, 0, 0.25), inset 0 0 25px rgba(255, 176, 0, 0.1)'
       }}>
         {/* Scanlines Effect */}
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.25) 0px, rgba(0,0,0,0.25) 1px, transparent 1px, transparent 2px)',
+          background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 1px, transparent 1px, transparent 2px)',
           pointerEvents: 'none',
-          opacity: 0.6
+          opacity: 0.7
         }} />
 
         {/* Primary Counter */}
-        <div style={{ fontSize: '0.7rem', color: '#ffb000', letterSpacing: '2px', textAlign: 'left', marginBottom: '2px' }}>
-          T-MINUS // TIME REMAINING:
+        <div style={{ fontSize: '0.8rem', color: '#ffb000', letterSpacing: '2px', textAlign: 'left', marginBottom: '4px', fontWeight: 'bold' }}>
+          T-MINUS // ESTIMATED REMAINING LIFESPAN:
         </div>
         <div style={{ 
-          fontSize: '1.75rem', 
+          fontSize: 'clamp(2rem, 5vw, 2.75rem)', 
           color: '#ffb000', 
           fontWeight: '900', 
-          letterSpacing: '1px',
-          textShadow: '0 0 15px #ffb000, 0 0 30px rgba(255, 176, 0, 0.4)' 
+          lineHeight: '1.1',
+          letterSpacing: '1.5px',
+          textShadow: '0 0 20px #ffb000, 0 0 40px rgba(255, 176, 0, 0.5)' 
         }}>
           ~4,500,000,000 Y
         </div>
 
         {/* Live Ticking Seconds + Subseconds */}
         <div style={{ 
-          fontSize: '0.8rem', 
+          fontSize: 'clamp(1rem, 2.8vw, 1.35rem)', 
           color: '#00f0ff', 
-          marginTop: '4px',
-          fontWeight: '700',
-          textShadow: '0 0 10px rgba(0, 240, 255, 0.5)'
+          marginTop: '8px',
+          fontWeight: '800',
+          letterSpacing: '1px',
+          textShadow: '0 0 12px rgba(0, 240, 255, 0.6)'
         }}>
           {formattedSeconds}.{ms} s
         </div>
       </div>
 
       {/* Cyber Fuel Progress Bar */}
-      <div style={{ width: '100%', maxWidth: '390px', margin: '0.4rem 0 0.8rem 0', textAlign: 'left' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
-          <span>H2_CORE_FUSION: 47.4%</span>
+      <div style={{ width: '100%', maxWidth: '560px', margin: '0.6rem 0 1.2rem 0', textAlign: 'left' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-body)', fontWeight: 'bold', marginBottom: '5px' }}>
+          <span style={{ color: '#ffb000' }}>H2_CORE_FUSION: 47.4% REMAINING</span>
           <span style={{ color: '#ff0055' }}>EVENT: HELIUM_FLASH</span>
         </div>
-        <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
-          <div style={{ width: '47.4%', height: '100%', background: 'linear-gradient(90deg, #ffb000, #ff0055)', boxShadow: '0 0 10px #ffb000' }} />
+        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.12)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ width: '47.4%', height: '100%', background: 'linear-gradient(90deg, #ffb000, #ff0055)', boxShadow: '0 0 15px #ffb000' }} />
         </div>
       </div>
       
@@ -125,15 +127,16 @@ function SunTimer({ onBack }) {
         <button 
           onClick={onBack} 
           style={{ 
-            padding: '7px 20px', 
-            fontSize: '0.75rem', 
+            padding: '10px 28px', 
+            fontSize: '0.85rem', 
             color: '#ffb000', 
-            background: 'rgba(255, 176, 0, 0.08)',
-            border: '1px solid rgba(255, 176, 0, 0.5)',
-            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+            background: 'rgba(255, 176, 0, 0.12)',
+            border: '1px solid #ffb000',
+            clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
             cursor: 'pointer',
             fontWeight: 'bold',
-            letterSpacing: '1px',
+            letterSpacing: '1.5px',
+            boxShadow: '0 0 15px rgba(255, 176, 0, 0.25)',
             transition: 'all 0.2s ease'
           }}
         >
