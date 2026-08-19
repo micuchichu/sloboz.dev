@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const photos = [
-  { id: 'CAP_01.RAW', src: 'https://sloboz.dev/assets/passions/photo.jpg', specs: 'ISO 50 | f/1.7 | 58mm' },
-  { id: 'CAP_02.RAW', src: 'https://sloboz.dev/assets/gallery/day3.jpg', specs: 'ISO 80 | f/1.7 | 23mm' },
-  { id: 'CAP_03.RAW', src: 'https://sloboz.dev/assets/gallery/day2.jpg', specs: 'ISO 80 | f/1.7 | 23mm' },
-  { id: 'CAP_04.RAW', src: 'https://sloboz.dev/assets/gallery/day1.jpg', specs: 'ISO 50 | f/1.7 | 23mm' }
+  { id: 'CAP_01.RAW', src: './assets/passions/photo.jpg', specs: 'ISO 50 | f/1.7 | 58mm' },
+  { id: 'CAP_02.RAW', src: './assets/gallery/day1.jpg', specs: 'ISO 50 | f/1.7 | 23mm' },
+  { id: 'CAP_03.RAW', src: './assets/gallery/day2.jpg', specs: 'ISO 80 | f/1.7 | 23mm' },
+  { id: 'CAP_04.RAW', src: './assets/gallery/day3.jpg', specs: 'ISO 80 | f/1.7 | 23mm' },
+  { id: 'CAP_05.RAW', src: './assets/gallery/day4.jpg', specs: 'ISO 64 | f/2.0 | 35mm' },
+  { id: 'CAP_06.RAW', src: './assets/gallery/day5.jpg', specs: 'ISO 100 | f/1.8 | 28mm' },
+  { id: 'CAP_07.RAW', src: './assets/gallery/day6.jpg', specs: 'ISO 50 | f/1.7 | 50mm' },
+  { id: 'CAP_08.RAW', src: './assets/gallery/day7.jpg', specs: 'ISO 125 | f/2.2 | 85mm' }
 ];
 
 export default function OpticsArchive() {

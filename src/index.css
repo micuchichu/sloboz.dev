@@ -51,7 +51,7 @@ a {
   background: var(--text-muted);
 }
 
-/* The Cinematic Glowing Border Utility */
+/* Clean Glowing Card Utility */
 .border-glow-card {
   position: relative;
   background: var(--bg-card);
@@ -59,29 +59,13 @@ a {
   border: 1px solid var(--border-light);
   border-radius: 16px;
   overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
 }
 
-.border-glow-card::before {
-  content: "";
-  position: absolute;
-  top: -2px; left: -2px; right: -2px; bottom: -2px;
-  background: linear-gradient(45deg, transparent 40%, var(--accent-1), var(--accent-2), transparent 60%);
-  z-index: -1;
-  border-radius: 18px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  background-size: 200% 200%;
-  animation: bg-pan 4s infinite linear;
-}
-
-.border-glow-card:hover::before {
-  opacity: 0.8;
-}
-
-@keyframes bg-pan {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+.border-glow-card:hover {
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+  background: rgba(18, 17, 24, 0.85);
 }
 
 /* Glitch Text Utility */
