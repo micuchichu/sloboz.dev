@@ -241,30 +241,28 @@ function ProceduralGalaxy() {
   // Create soft radial glow star particle texture
   const starTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = 32;
+    canvas.height = 32;
     const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
     gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.15, 'rgba(240, 250, 255, 0.85)');
-    gradient.addColorStop(0.45, 'rgba(120, 190, 255, 0.35)');
-    gradient.addColorStop(0.75, 'rgba(80, 120, 255, 0.08)');
+    gradient.addColorStop(0.2, 'rgba(220, 245, 255, 0.8)');
+    gradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.25)');
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 64, 64);
+    ctx.fillRect(0, 0, 32, 32);
     const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
     return texture;
   }, []);
 
-  // Generate 75,000 Spiral Galaxy Stars with 3 spiral arms and color gradient
+  // 22,000 High-Performance Spiral Galaxy Stars
   const { positions, colors } = useMemo(() => {
-    const count = 75000;
+    const count = 22000;
     const arms = 3;
-    const radius = 950;
+    const radius = 900;
     const spin = 1.35;
-    const randomness = 0.45;
-    const power = 3.5;
+    const randomness = 0.4;
+    const power = 3.2;
 
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
@@ -282,16 +280,16 @@ function ProceduralGalaxy() {
       const branchAngle = ((i % arms) / arms) * Math.PI * 2;
       const spinAngle = r * spin * 0.0055;
 
-      // Arm Dispersion / Cloud Spread
-      const rX = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 25);
-      const rY = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r * 0.3 + 15);
-      const rZ = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 25);
+      // Arm Dispersion
+      const rX = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 20);
+      const rY = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r * 0.25 + 10);
+      const rZ = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 20);
 
       pos[i * 3] = Math.cos(branchAngle + spinAngle) * r + rX;
       pos[i * 3 + 1] = rY;
       pos[i * 3 + 2] = Math.sin(branchAngle + spinAngle) * r + rZ;
 
-      // Color Gradient from Core -> Arms -> Edge
+      // Color Gradient
       const mixedColor = new THREE.Color();
       if (normalizedR < 0.25) {
         mixedColor.copy(colorCore).lerp(colorCyan, normalizedR / 0.25);
@@ -301,11 +299,10 @@ function ProceduralGalaxy() {
         mixedColor.copy(colorPurple).lerp(colorMagenta, (normalizedR - 0.65) / 0.35);
       }
 
-      // Add subtle stellar temperature variation
-      if (Math.random() > 0.88) {
-        mixedColor.lerp(new THREE.Color('#67e8f9'), 0.3); // Bright blue star
-      } else if (Math.random() > 0.94) {
-        mixedColor.lerp(new THREE.Color('#fef08a'), 0.4); // Golden giant
+      if (Math.random() > 0.9) {
+        mixedColor.lerp(new THREE.Color('#67e8f9'), 0.3);
+      } else if (Math.random() > 0.95) {
+        mixedColor.lerp(new THREE.Color('#fef08a'), 0.4);
       }
 
       col[i * 3] = mixedColor.r;
@@ -316,14 +313,14 @@ function ProceduralGalaxy() {
     return { positions: pos, colors: col };
   }, []);
 
-  // Generate 12,000 Glowing Cosmic Dust & Nebula Gas Clouds
+  // 1,200 Soft Nebula Gas Clouds (Eliminates Fill-Rate Overdraw)
   const { dustPositions, dustColors } = useMemo(() => {
-    const dustCount = 12000;
+    const dustCount = 1200;
     const arms = 3;
-    const radius = 900;
+    const radius = 850;
     const spin = 1.35;
-    const randomness = 0.55;
-    const power = 2.8;
+    const randomness = 0.5;
+    const power = 2.5;
 
     const pos = new Float32Array(dustCount * 3);
     const col = new Float32Array(dustCount * 3);
@@ -338,9 +335,9 @@ function ProceduralGalaxy() {
       const branchAngle = ((i % arms) / arms) * Math.PI * 2;
       const spinAngle = r * spin * 0.0055;
 
-      const rX = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 35);
-      const rY = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r * 0.4 + 20);
-      const rZ = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 35);
+      const rX = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 25);
+      const rY = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r * 0.3 + 15);
+      const rZ = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 25);
 
       pos[i * 3] = Math.cos(branchAngle + spinAngle) * r + rX;
       pos[i * 3 + 1] = rY;
@@ -361,70 +358,66 @@ function ProceduralGalaxy() {
     return { dustPositions: pos, dustColors: col };
   }, []);
 
-  // Slow majestic galactic rotation
+  // Smooth galactic rotation
   useFrame((state, delta) => {
     if (galaxyRef.current) {
-      galaxyRef.current.rotation.y += delta * 0.012;
+      galaxyRef.current.rotation.y += delta * 0.01;
     }
     if (dustRef.current) {
-      dustRef.current.rotation.y += delta * 0.009;
+      dustRef.current.rotation.y += delta * 0.008;
     }
   });
 
   return (
     <group position={[15, -20, -70]} rotation={[0.48, 0.2, -0.15]}>
-      {/* Spiral Galaxy Star Particles */}
+      {/* Optimized Spiral Galaxy Stars */}
       <points ref={galaxyRef} frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
           <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} />
         </bufferGeometry>
         <pointsMaterial
-          size={3.4}
+          size={3.0}
           map={starTexture}
           vertexColors
           transparent
-          opacity={0.88}
+          opacity={0.85}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           sizeAttenuation
         />
       </points>
 
-      {/* Luminous Nebula Gas Dust Particles */}
+      {/* Lightweight Nebula Dust Clouds */}
       <points ref={dustRef} frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={dustPositions.length / 3} array={dustPositions} itemSize={3} />
           <bufferAttribute attach="attributes-color" count={dustColors.length / 3} array={dustColors} itemSize={3} />
         </bufferGeometry>
         <pointsMaterial
-          size={16.0}
+          size={10.0}
           map={starTexture}
           vertexColors
           transparent
-          opacity={0.12}
+          opacity={0.14}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           sizeAttenuation
         />
       </points>
-
-      {/* Glowing Galactic Core Center Bulge */}
-      <pointLight position={[0, 0, 0]} color="#00e5ff" intensity={4} distance={350} />
-      <pointLight position={[0, 0, 0]} color="#ffe8b0" intensity={3.5} distance={200} />
     </group>
   );
 }
 
 function DistantStarfield() {
-  const count = 25000;
+  const count = 4000;
   
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 5000;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 5000;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 5000;
+      pos[i * 3] = (Math.random() - 0.5) * 4500;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 4500;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 4500;
     }
     return pos;
   }, [count]);
@@ -434,7 +427,7 @@ function DistantStarfield() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial size={1.6} color="#ffffff" sizeAttenuation={false} transparent opacity={0.6} depthWrite={false} depthTest={false} />
+      <pointsMaterial size={1.5} color="#ffffff" sizeAttenuation={false} transparent opacity={0.65} depthWrite={false} depthTest={false} />
     </points>
   );
 }
@@ -573,7 +566,12 @@ export default function SpatialScene() {
       </div>
 
       <div style={{ width: '100%', height: '100%' }}>
-        <Canvas camera={{ position: [0, 2, 15], fov: 60 }} dpr={1} style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}>
+        <Canvas 
+          camera={{ position: [0, 2, 15], fov: 60 }} 
+          dpr={1} 
+          gl={{ powerPreference: 'high-performance', antialias: false, stencil: false, depth: true }}
+          style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}
+        >
           <color attach="background" args={['#030204']} />
           <ambientLight intensity={0.25} />
           <pointLight position={[100, 100, 100]} intensity={2} color="#00e5ff" />
@@ -658,12 +656,11 @@ export default function SpatialScene() {
             </group>
           </group>
 
-          {/* Post Processing Shaders */}
-          <EffectComposer disableNormalPass>
-            <Bloom luminanceThreshold={0.15} luminanceSmoothing={0.9} intensity={1.5} />
-            <Noise opacity={0.025} />
-            <Vignette eskil={false} offset={0.1} darkness={1.1} />
-            <ChromaticAberration offset={[0.0015, 0.0015]} />
+          {/* Lightweight High-Performance Post-Processing */}
+          <EffectComposer multisampling={0} disableNormalPass>
+            <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.8} intensity={1.2} />
+            <Vignette eskil={false} offset={0.15} darkness={1.0} />
+            <ChromaticAberration offset={[0.001, 0.001]} />
           </EffectComposer>
 
         </Canvas>
