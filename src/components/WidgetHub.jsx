@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, ArrowLeft } from 'lucide-react';
+import { Sun, ArrowLeft, Lock, Construction } from 'lucide-react';
 
 function SunTimer({ onBack }) {
   const BASE_SECONDS = 142006284000000000n;
@@ -147,72 +147,105 @@ function SunTimer({ onBack }) {
   );
 }
 
-function MonopolyCard({ onBack }) {
+function WorkInProgressCard({ title, icon, color = '#f59e0b', onBack }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', height: '100%', padding: '1rem' }}>
-      
-      <div style={{ 
-        border: '1px dashed rgba(234, 179, 8, 0.5)', 
-        width: '85%', 
-        maxWidth: '320px',
-        padding: '1.2rem', 
-        textAlign: 'center', 
-        borderRadius: '12px', 
-        background: 'rgba(234, 179, 8, 0.06)'
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      textAlign: 'center', 
+      height: '100%', 
+      padding: '1.5rem',
+      position: 'relative'
+    }}>
+      {/* Caution Badge */}
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        background: `${color}18`,
+        border: `1px solid ${color}60`,
+        padding: '5px 16px',
+        borderRadius: '4px',
+        color: color,
+        fontFamily: 'monospace',
+        fontSize: '0.82rem',
+        fontWeight: 'bold',
+        letterSpacing: '1.5px',
+        marginBottom: '1rem',
+        boxShadow: `0 0 20px ${color}25`
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '1.2rem', fontFamily: 'monospace', color: '#eab308', fontWeight: 'bold' }}>M10</span>
-          <span style={{ fontSize: '2rem' }}>🎩</span>
-          <span style={{ fontSize: '1.2rem', fontFamily: 'monospace', color: '#eab308', fontWeight: 'bold' }}>M10</span>
-        </div>
-        <p style={{ marginTop: '0.75rem', color: '#ffffff', fontSize: '0.95rem', fontWeight: '600' }}>
-          Monopoly Money 😂
-        </p>
+        <span>🚧</span>
+        <span>WORK IN PROGRESS // LOCKED</span>
+        <span>🚧</span>
       </div>
 
-      {onBack && (
-        <button 
-          onClick={onBack} 
-          className="clean-btn clean-btn-secondary"
-          style={{ marginTop: '1.2rem', padding: '8px 18px', fontSize: '0.8rem', color: '#eab308', borderColor: 'rgba(234, 179, 8, 0.4)' }}
-        >
-          <ArrowLeft size={14} />
-          <span>Back to Map</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
-function WeatherCard({ onBack }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', height: '100%', padding: '1rem' }}>
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0.4rem', justifyContent: 'center' }}>
-        <Sun size={38} color="#10b981" />
-        <span style={{ fontSize: '2.6rem', fontWeight: '800', color: '#ffffff' }}>
-          32°C
-        </span>
+      {/* Center Icon Frame */}
+      <div style={{
+        padding: '1.2rem',
+        borderRadius: '16px',
+        background: 'rgba(255, 255, 255, 0.03)',
+        border: `1px dashed ${color}60`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '0.9rem',
+        boxShadow: `0 0 30px ${color}15`
+      }}>
+        {icon}
       </div>
 
-      <h3 style={{ color: '#ffffff', fontSize: '1.25rem', marginBottom: '0.2rem', fontWeight: '700' }}>
-        Gaborone, Botswana
+      <h3 style={{ color: '#ffffff', fontSize: '1.4rem', fontWeight: '800', marginBottom: '0.4rem' }}>
+        {title}
       </h3>
-      <p style={{ color: 'var(--text-body)', fontSize: '0.88rem', marginBottom: '1rem' }}>
-        Sunny & Clear Skies
+
+      <p style={{ color: 'var(--text-body)', fontSize: '0.92rem', maxWidth: '380px', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+        This module is currently under active construction. Signal calibration and telemetry integration in progress.
       </p>
 
       {onBack && (
         <button 
           onClick={onBack} 
           className="clean-btn clean-btn-secondary"
-          style={{ padding: '8px 18px', fontSize: '0.8rem', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+          style={{ 
+            padding: '9px 24px', 
+            fontSize: '0.85rem', 
+            color: color, 
+            borderColor: `${color}60`,
+            background: `${color}10`,
+            fontFamily: 'monospace',
+            fontWeight: 'bold',
+            letterSpacing: '1px'
+          }}
         >
-          <ArrowLeft size={14} />
-          <span>Back to Map</span>
+          <ArrowLeft size={16} />
+          <span>RETURN TO MAP</span>
         </button>
       )}
     </div>
+  );
+}
+
+function MonopolyCard({ onBack }) {
+  return (
+    <WorkInProgressCard 
+      title="Monopoly Treasury" 
+      icon={<Lock size={38} color="#eab308" />} 
+      color="#eab308" 
+      onBack={onBack} 
+    />
+  );
+}
+
+function WeatherCard({ onBack }) {
+  return (
+    <WorkInProgressCard 
+      title="Atmospheric Radar" 
+      icon={<Construction size={38} color="#10b981" />} 
+      color="#10b981" 
+      onBack={onBack} 
+    />
   );
 }
 
