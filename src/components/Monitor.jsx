@@ -66,13 +66,17 @@ export default function Monitor({ position, rotation, children, width = 900, hei
             overscrollBehavior: 'contain',
             padding: width < 600 ? '1.25rem 1rem' : '2rem', 
             position: 'relative',
-            background: 'rgba(6, 5, 7, 0.75)',
-            border: '2px solid var(--accent-1)',
-            boxShadow: hovered ? '0 0 30px var(--accent-1)' : '0 0 15px rgba(0,229,255,0.3)',
-            borderRadius: '16px',
-            transition: 'box-shadow 0.3s ease, transform 0.3s ease',
+            background: 'rgba(8, 7, 13, 0.82)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: hovered ? '1px solid rgba(0, 229, 255, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: hovered 
+              ? '0 0 35px rgba(0, 229, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)' 
+              : '0 12px 40px -10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+            borderRadius: '20px',
+            transition: 'box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease',
             pointerEvents: 'auto',
-            transform: hovered ? 'scale(1.02)' : 'none'
+            transform: hovered ? 'scale(1.015)' : 'none'
           }}
         >
           {children}

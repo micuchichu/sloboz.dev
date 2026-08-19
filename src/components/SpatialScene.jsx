@@ -463,19 +463,20 @@ export default function SpatialScene() {
       {/* 2D HUD Navigation Overlay */}
       <div style={{
         position: 'absolute',
-        top: isMobile ? 'max(0.8rem, env(safe-area-inset-top, 0.8rem))' : '2rem',
+        top: isMobile ? 'max(0.8rem, env(safe-area-inset-top, 0.8rem))' : '1.8rem',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 99999999,
         display: 'flex',
         alignItems: 'center',
-        gap: isMobile ? '4px' : '0.6rem',
-        background: 'rgba(5, 5, 10, 0.75)',
-        backdropFilter: 'blur(16px)',
-        padding: isMobile ? '0.4rem 0.5rem' : '0.6rem 1rem',
+        gap: isMobile ? '4px' : '6px',
+        background: 'rgba(10, 9, 16, 0.82)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        padding: isMobile ? '0.35rem 0.45rem' : '0.45rem 0.65rem',
         borderRadius: '35px',
-        border: '1px solid rgba(0, 229, 255, 0.35)',
-        boxShadow: '0 0 25px rgba(0, 229, 255, 0.2)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 25px rgba(0, 229, 255, 0.15)',
         maxWidth: 'calc(100vw - 1rem)',
         width: 'max-content',
         boxSizing: 'border-box'
@@ -483,18 +484,19 @@ export default function SpatialScene() {
         <button 
           onClick={() => setStation(2)} 
           style={{ 
-            background: station === 2 ? 'var(--accent-1)' : 'transparent', 
-            color: station === 2 ? '#000' : 'var(--text-main)', 
-            border: 'none', 
-            padding: isMobile ? '8px 10px' : '10px 18px', 
+            background: station === 2 ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 
+            color: station === 2 ? '#ffffff' : 'var(--text-muted)', 
+            border: station === 2 ? '1px solid rgba(168, 85, 247, 0.6)' : '1px solid transparent', 
+            padding: isMobile ? '7px 11px' : '8px 16px', 
             borderRadius: '20px', 
             cursor: 'pointer', 
             fontFamily: 'monospace', 
-            fontWeight: 'bold', 
-            fontSize: isMobile ? '0.8rem' : '0.9rem',
-            letterSpacing: isMobile ? '0px' : '0.5px',
+            fontWeight: '700', 
+            fontSize: isMobile ? '0.78rem' : '0.85rem',
+            letterSpacing: '0.5px',
             touchAction: 'manipulation',
-            transition: 'all 0.2s' 
+            boxShadow: station === 2 ? '0 0 16px rgba(168, 85, 247, 0.4)' : 'none',
+            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)' 
           }}
         >
           OPTICS
@@ -502,18 +504,19 @@ export default function SpatialScene() {
         <button 
           onClick={() => setStation(0)} 
           style={{ 
-            background: station === 0 ? 'var(--accent-1)' : 'transparent', 
-            color: station === 0 ? '#000' : 'var(--text-main)', 
-            border: 'none', 
-            padding: isMobile ? '8px 10px' : '10px 18px', 
+            background: station === 0 ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 
+            color: station === 0 ? '#ffffff' : 'var(--text-muted)', 
+            border: station === 0 ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid transparent', 
+            padding: isMobile ? '7px 11px' : '8px 16px', 
             borderRadius: '20px', 
             cursor: 'pointer', 
             fontFamily: 'monospace', 
-            fontWeight: 'bold', 
-            fontSize: isMobile ? '0.8rem' : '0.9rem',
-            letterSpacing: isMobile ? '0px' : '0.5px',
+            fontWeight: '700', 
+            fontSize: isMobile ? '0.78rem' : '0.85rem',
+            letterSpacing: '0.5px',
             touchAction: 'manipulation',
-            transition: 'all 0.2s' 
+            boxShadow: station === 0 ? '0 0 16px rgba(0, 229, 255, 0.4)' : 'none',
+            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)' 
           }}
         >
           CORE
@@ -521,47 +524,48 @@ export default function SpatialScene() {
         <button 
           onClick={() => setStation(1)} 
           style={{ 
-            background: station === 1 ? 'var(--accent-1)' : 'transparent', 
-            color: station === 1 ? '#000' : 'var(--text-main)', 
-            border: 'none', 
-            padding: isMobile ? '8px 10px' : '10px 18px', 
+            background: station === 1 ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 
+            color: station === 1 ? '#ffffff' : 'var(--text-muted)', 
+            border: station === 1 ? '1px solid rgba(255, 0, 127, 0.6)' : '1px solid transparent', 
+            padding: isMobile ? '7px 11px' : '8px 16px', 
             borderRadius: '20px', 
             cursor: 'pointer', 
             fontFamily: 'monospace', 
-            fontWeight: 'bold', 
-            fontSize: isMobile ? '0.8rem' : '0.9rem',
-            letterSpacing: isMobile ? '0px' : '0.5px',
+            fontWeight: '700', 
+            fontSize: isMobile ? '0.78rem' : '0.85rem',
+            letterSpacing: '0.5px',
             touchAction: 'manipulation',
-            transition: 'all 0.2s' 
+            boxShadow: station === 1 ? '0 0 16px rgba(255, 0, 127, 0.4)' : 'none',
+            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)' 
           }}
         >
           {isMobile ? 'DEPLOY' : 'DEPLOYMENTS'}
         </button>
         
-        <div style={{ width: '1px', height: isMobile ? '16px' : '20px', background: 'rgba(255,255,255,0.18)', margin: '0 2px' }} />
+        <div style={{ width: '1px', height: isMobile ? '14px' : '18px', background: 'rgba(255,255,255,0.18)', margin: '0 2px' }} />
         
         <button 
           onClick={() => setStation(6)} 
           style={{ 
-            background: station === 6 ? 'linear-gradient(135deg, #00e5ff, #ff007f)' : 'rgba(255,255,255,0.06)', 
+            background: station === 6 ? 'linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(255, 0, 127, 0.3))' : 'rgba(255,255,255,0.04)', 
             color: station === 6 ? '#ffffff' : 'var(--accent-1)', 
-            border: station === 6 ? 'none' : '1px solid rgba(0, 229, 255, 0.4)', 
-            padding: isMobile ? '8px 10px' : '10px 18px', 
+            border: station === 6 ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(0, 229, 255, 0.25)', 
+            padding: isMobile ? '7px 11px' : '8px 16px', 
             borderRadius: '20px', 
             cursor: 'pointer', 
             fontFamily: 'monospace', 
-            fontWeight: 'bold', 
-            fontSize: isMobile ? '0.8rem' : '0.9rem',
-            letterSpacing: isMobile ? '0px' : '0.5px',
+            fontWeight: '700', 
+            fontSize: isMobile ? '0.78rem' : '0.85rem',
+            letterSpacing: '0.5px',
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
+            gap: '5px',
             touchAction: 'manipulation',
-            boxShadow: station === 6 ? '0 0 20px rgba(0, 229, 255, 0.6)' : 'none',
-            transition: 'all 0.2s ease'
+            boxShadow: station === 6 ? '0 0 20px rgba(0, 229, 255, 0.4)' : 'none',
+            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
-          <span>✦</span> {isMobile ? 'MAP' : 'CONSTELLATION'}
+          <span style={{ fontSize: '0.85rem' }}>✦</span> {isMobile ? 'MAP' : 'CONSTELLATION'}
         </button>
       </div>
 
