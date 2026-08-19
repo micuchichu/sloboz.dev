@@ -2,52 +2,88 @@ import React, { useState, useEffect } from 'react';
 import { Sun, CloudSun, Coins, ArrowLeft, Radio, Zap } from 'lucide-react';
 
 function SunTimer({ onBack }) {
-  const [doom, setDoom] = useState(99999999);
-  
+  // 4.5 Billion Years in seconds: 4,500,000,000 * 31,556,952 seconds = 142,006,284,000,000,000
+  const BASE_SECONDS = 142006284000000000n;
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    const elapsedSinceEpoch = BigInt(Math.floor(Date.now() / 1000));
+    return BASE_SECONDS - elapsedSinceEpoch;
+  });
+
   useEffect(() => {
-    const i = setInterval(() => setDoom(d => d - 1), 1000);
-    return () => clearInterval(i);
+    const interval = setInterval(() => {
+      setSecondsLeft(prev => prev - 1n);
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
+  // Format large BigInt with comma separation
+  const formattedSeconds = secondsLeft.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', height: '100%', padding: '0.8rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', height: '100%', padding: '0.6rem' }}>
       
       {/* Node Badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.1)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: '0.8rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.1)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: '0.6rem' }}>
         <Zap size={12} color="#f59e0b" />
-        <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '1px', fontWeight: 'bold' }}>
-          SOLAR PROTOCOL // NODE 04
+        <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '1px', fontWeight: 'bold' }}>
+          STELLAR CHRONOMETER // SOL-0
         </span>
       </div>
 
-      <h3 style={{ color: '#ffffff', fontSize: '1.2rem', marginBottom: '0.4rem', fontWeight: '700' }}>
-        Solar Flare Horizon
+      <h3 style={{ color: '#ffffff', fontSize: '1.15rem', marginBottom: '0.2rem', fontWeight: '700' }}>
+        ☀️ Sun Red Giant Expansion In
       </h3>
 
-      {/* Big Digital Display */}
+      {/* 4.5 Billion Years Main Indicator */}
       <div style={{
-        padding: '0.8rem 1.6rem',
+        margin: '0.4rem 0',
+        padding: '0.6rem 1.2rem',
         background: 'rgba(245, 158, 11, 0.05)',
         border: '1px solid rgba(245, 158, 11, 0.25)',
         borderRadius: '12px',
-        margin: '0.5rem 0',
+        width: '100%',
+        maxWidth: '380px',
         boxShadow: '0 0 25px rgba(245, 158, 11, 0.12)'
       }}>
-        <div style={{ fontSize: '2rem', color: '#f59e0b', fontFamily: 'monospace', fontWeight: '800', textShadow: '0 0 20px rgba(245, 158, 11, 0.6)' }}>
-          {doom.toLocaleString()}s
+        <div style={{ fontSize: '1.45rem', color: '#f59e0b', fontFamily: 'monospace', fontWeight: '800', textShadow: '0 0 18px rgba(245, 158, 11, 0.6)' }}>
+          ~4,500,000,000 YEARS
         </div>
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-          T-MINUS EXPIRATION // CHRONO SYNC
+        <div style={{ fontSize: '0.8rem', color: '#fde68a', fontFamily: 'monospace', margin: '3px 0' }}>
+          {formattedSeconds}s
+        </div>
+        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+          MAIN SEQUENCE FUSION COLLAPSE
         </span>
+      </div>
+
+      {/* Solar Fuel & Physics Telemetry */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr', 
+        gap: '6px', 
+        width: '100%', 
+        maxWidth: '380px',
+        margin: '0.3rem 0 0.6rem 0',
+        fontSize: '0.72rem',
+        fontFamily: 'monospace'
+      }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.65rem' }}>CORE HYDROGEN</span>
+          <span style={{ color: '#10b981', fontWeight: 'bold' }}>~47.4% REMAINING</span>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '5px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.65rem' }}>SPECTRAL TYPE</span>
+          <span style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>G2V YELLOW DWARF</span>
+        </div>
       </div>
       
       {onBack && (
         <button 
           onClick={onBack} 
           className="glass-btn glass-btn-secondary"
-          style={{ marginTop: '1rem', padding: '6px 14px', fontSize: '0.75rem', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b' }}
+          style={{ padding: '5px 14px', fontSize: '0.75rem', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b' }}
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={13} />
           <span>CONSTELLATION MAP</span>
         </button>
       )}
