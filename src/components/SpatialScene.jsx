@@ -455,8 +455,8 @@ export default function SpatialScene() {
   const projectsHeight = isMobile ? 680 : 800;
   const opticsWidth = isMobile ? 380 : 1200;
   const opticsHeight = isMobile ? 680 : 800;
-  const widgetWidth = isMobile ? 340 : 420;
-  const widgetHeight = 340;
+  const widgetWidth = isMobile ? 360 : 680;
+  const widgetHeight = isMobile ? 500 : 460;
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', position: 'relative', overflow: 'hidden' }}>
