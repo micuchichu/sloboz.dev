@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sun, ArrowLeft, Lock, Construction } from 'lucide-react';
 
 function SunTimer({ onBack }) {
@@ -7,18 +7,29 @@ function SunTimer({ onBack }) {
     const elapsedSinceEpoch = BigInt(Math.floor(Date.now() / 1000));
     return BASE_SECONDS - elapsedSinceEpoch;
   });
-  const [ms, setMs] = useState(999);
+  const msRef = useRef(null);
 
   useEffect(() => {
     const sInterval = setInterval(() => {
       setSecondsLeft(prev => prev - 1n);
     }, 1000);
-    const msInterval = setInterval(() => {
-      setMs(Math.floor(Math.random() * 900) + 100);
-    }, 50);
+
+    let animId;
+    let lastTime = 0;
+    const updateMs = (now) => {
+      if (now - lastTime > 80) {
+        lastTime = now;
+        if (msRef.current) {
+          msRef.current.textContent = (Math.floor(Math.random() * 900) + 100).toString();
+        }
+      }
+      animId = requestAnimationFrame(updateMs);
+    };
+    animId = requestAnimationFrame(updateMs);
+
     return () => {
       clearInterval(sInterval);
-      clearInterval(msInterval);
+      cancelAnimationFrame(animId);
     };
   }, []);
 
@@ -108,7 +119,7 @@ function SunTimer({ onBack }) {
           letterSpacing: '1px',
           textShadow: '0 0 12px rgba(0, 240, 255, 0.6)'
         }}>
-          {formattedSeconds}.{ms} s
+          {formattedSeconds}.<span ref={msRef}>999</span> s
         </div>
       </div>
 

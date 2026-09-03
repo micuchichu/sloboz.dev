@@ -1,7 +1,7 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Html } from '@react-three/drei';
-import { EffectComposer, Bloom, ChromaticAberration, Vignette, Noise } from '@react-three/postprocessing';
+import { OrbitControls, Html } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import Monitor from './Monitor';
 import Hero from './Hero';
@@ -9,18 +9,29 @@ import WidgetHub from './WidgetHub';
 import Projects from './Projects';
 import OpticsArchive from './OpticsArchive';
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => 
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  );
+function useDeviceCapabilities() {
+  const [capabilities, setCapabilities] = useState(() => {
+    if (typeof window === 'undefined') return { isMobile: false, isLowEnd: false };
+    const isMobile = window.innerWidth < 768;
+    const concurrency = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
+    const memory = typeof navigator !== 'undefined' ? (navigator.deviceMemory || 8) : 8;
+    const isLowEnd = isMobile || concurrency <= 4 || memory < 4;
+    return { isMobile, isLowEnd };
+  });
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      const concurrency = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
+      const memory = typeof navigator !== 'undefined' ? (navigator.deviceMemory || 8) : 8;
+      const isLowEnd = isMobile || concurrency <= 4 || memory < 4;
+      setCapabilities({ isMobile, isLowEnd });
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return isMobile;
+  return capabilities;
 }
 
 function CameraController({ station, stations, isMobile }) {
@@ -195,8 +206,6 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
         <meshBasicMaterial color={color} transparent opacity={hovered ? 0.65 : 0.35} wireframe />
       </mesh>
 
-      <pointLight color={color} intensity={hovered ? 8 : (size > 3 ? 4 : 2)} distance={size > 3 ? 80 : 45} />
-
       {/* Crisp Always-Readable Floating Label Badge */}
       {label && (
         <Html
@@ -215,8 +224,7 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
             letterSpacing: '1.5px',
             color: color,
             textShadow: `0 0 10px ${color}`,
-            background: 'rgba(5, 5, 12, 0.85)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(5, 5, 12, 0.88)',
             padding: size < 4 ? '3px 8px' : '4px 10px',
             borderRadius: '12px',
             border: `1px solid ${color}66`,
@@ -234,11 +242,11 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
   );
 }
 
-function ProceduralGalaxy() {
+function ProceduralGalaxy({ isLowEnd = false }) {
   const galaxyRef = useRef();
   const dustRef = useRef();
 
-  // Create soft radial glow star particle texture
+  // Create soft radial glow star particle texture once
   const starTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 32;
@@ -251,13 +259,12 @@ function ProceduralGalaxy() {
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 32, 32);
-    const texture = new THREE.CanvasTexture(canvas);
-    return texture;
+    return new THREE.CanvasTexture(canvas);
   }, []);
 
-  // 22,000 High-Performance Spiral Galaxy Stars
+  // Adaptive particle counts: scaled down on low-end devices for silky 60fps
   const { positions, colors } = useMemo(() => {
-    const count = 22000;
+    const count = isLowEnd ? 8000 : 20000;
     const arms = 3;
     const radius = 900;
     const spin = 1.35;
@@ -267,20 +274,18 @@ function ProceduralGalaxy() {
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
 
-    const colorCore = new THREE.Color('#fff7ed'); // Warm white-gold core
-    const colorCyan = new THREE.Color('#00e5ff'); // Electric cyan mid arm
-    const colorPurple = new THREE.Color('#a855f7'); // Deep purple
-    const colorMagenta = new THREE.Color('#ff007f'); // Magenta nebulae outer edge
+    const colorCore = new THREE.Color('#fff7ed');
+    const colorCyan = new THREE.Color('#00e5ff');
+    const colorPurple = new THREE.Color('#a855f7');
+    const colorMagenta = new THREE.Color('#ff007f');
 
     for (let i = 0; i < count; i++) {
       const r = Math.pow(Math.random(), 1.5) * radius;
       const normalizedR = r / radius;
 
-      // Logarithmic Spiral Arm Angles
       const branchAngle = ((i % arms) / arms) * Math.PI * 2;
       const spinAngle = r * spin * 0.0055;
 
-      // Arm Dispersion
       const rX = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 20);
       const rY = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r * 0.25 + 10);
       const rZ = Math.pow(Math.random(), power) * (Math.random() < 0.5 ? 1 : -1) * randomness * (r + 20);
@@ -289,7 +294,6 @@ function ProceduralGalaxy() {
       pos[i * 3 + 1] = rY;
       pos[i * 3 + 2] = Math.sin(branchAngle + spinAngle) * r + rZ;
 
-      // Color Gradient
       const mixedColor = new THREE.Color();
       if (normalizedR < 0.25) {
         mixedColor.copy(colorCore).lerp(colorCyan, normalizedR / 0.25);
@@ -311,11 +315,11 @@ function ProceduralGalaxy() {
     }
 
     return { positions: pos, colors: col };
-  }, []);
+  }, [isLowEnd]);
 
-  // 1,200 Soft Nebula Gas Clouds (Eliminates Fill-Rate Overdraw)
+  // Adaptive Nebula Gas Clouds (Eliminates Fill-Rate Overdraw)
   const { dustPositions, dustColors } = useMemo(() => {
-    const dustCount = 1200;
+    const dustCount = isLowEnd ? 300 : 1000;
     const arms = 3;
     const radius = 850;
     const spin = 1.35;
@@ -356,9 +360,8 @@ function ProceduralGalaxy() {
     }
 
     return { dustPositions: pos, dustColors: col };
-  }, []);
+  }, [isLowEnd]);
 
-  // Smooth galactic rotation
   useFrame((state, delta) => {
     if (galaxyRef.current) {
       galaxyRef.current.rotation.y += delta * 0.01;
@@ -370,7 +373,6 @@ function ProceduralGalaxy() {
 
   return (
     <group position={[15, -20, -70]} rotation={[0.48, 0.2, -0.15]}>
-      {/* Optimized Spiral Galaxy Stars */}
       <points ref={galaxyRef} frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
@@ -388,7 +390,6 @@ function ProceduralGalaxy() {
         />
       </points>
 
-      {/* Lightweight Nebula Dust Clouds */}
       <points ref={dustRef} frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={dustPositions.length / 3} array={dustPositions} itemSize={3} />
@@ -409,8 +410,8 @@ function ProceduralGalaxy() {
   );
 }
 
-function DistantStarfield() {
-  const count = 4000;
+function DistantStarfield({ isLowEnd = false }) {
+  const count = isLowEnd ? 1500 : 3500;
   
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
@@ -434,7 +435,7 @@ function DistantStarfield() {
 
 export default function SpatialScene() {
   const [station, setStation] = useState(0);
-  const isMobile = useIsMobile();
+  const { isMobile, isLowEnd } = useDeviceCapabilities();
   
   // Fixed asymmetrical constellation layout with 6 stations
   const stations = useMemo(() => [
@@ -459,7 +460,17 @@ export default function SpatialScene() {
   const widgetHeight = isMobile ? 500 : 460;
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#000', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#030204', position: 'relative', overflow: 'hidden' }}>
+      
+      {/* Zero-cost GPU radial vignette overlay */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        background: 'radial-gradient(circle at center, transparent 60%, rgba(3, 2, 4, 0.75) 100%)',
+        zIndex: 2
+      }} />
+
       {/* 2D HUD Navigation Overlay */}
       <div style={{
         position: 'absolute',
@@ -470,13 +481,13 @@ export default function SpatialScene() {
         display: 'flex',
         alignItems: 'center',
         gap: isMobile ? '4px' : '6px',
-        background: 'rgba(10, 9, 16, 0.82)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        background: 'rgba(10, 9, 16, 0.88)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
         padding: isMobile ? '0.35rem 0.45rem' : '0.45rem 0.65rem',
         borderRadius: '35px',
         border: '1px solid rgba(255, 255, 255, 0.12)',
-        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 25px rgba(0, 229, 255, 0.15)',
+        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
         maxWidth: 'calc(100vw - 1rem)',
         width: 'max-content',
         boxSizing: 'border-box'
@@ -572,17 +583,21 @@ export default function SpatialScene() {
       <div style={{ width: '100%', height: '100%' }}>
         <Canvas 
           camera={{ position: [0, 2, 15], fov: 60 }} 
-          dpr={1} 
-          gl={{ powerPreference: 'high-performance', antialias: false, stencil: false, depth: true }}
+          dpr={isLowEnd ? [0.75, 1] : 1} 
+          gl={{ 
+            powerPreference: 'high-performance', 
+            antialias: false, 
+            stencil: false, 
+            depth: true,
+            alpha: false,
+            precision: isLowEnd ? 'mediump' : 'highp'
+          }}
           style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}
         >
           <color attach="background" args={['#030204']} />
-          <ambientLight intensity={0.25} />
-          <pointLight position={[100, 100, 100]} intensity={2} color="#00e5ff" />
-          <pointLight position={[-100, 50, -100]} intensity={2} color="#ff007f" />
           
-          <DistantStarfield />
-          <ProceduralGalaxy />
+          <DistantStarfield isLowEnd={isLowEnd} />
+          <ProceduralGalaxy isLowEnd={isLowEnd} />
           
           {isConstellation && <ConstellationLines stations={stations} />}
 
@@ -593,11 +608,11 @@ export default function SpatialScene() {
             {isConstellation && (
               <ConstellationBeacon position={[0, 0, 0]} color="#00e5ff" label="CORE" size={5} onClick={() => setStation(0)} />
             )}
-            <group visible={!isConstellation && station === 0}>
-              <Monitor isHidden={isConstellation || station !== 0} position={[0, 0, 0]} rotation={[0, 0, 0]} width={coreWidth} height={coreHeight}>
+            {!isConstellation && station === 0 && (
+              <Monitor position={[0, 0, 0]} rotation={[0, 0, 0]} width={coreWidth} height={coreHeight}>
                 <Hero />
               </Monitor>
-            </group>
+            )}
           </group>
 
           {/* STATION 2: DEPLOYMENTS */}
@@ -605,11 +620,11 @@ export default function SpatialScene() {
             {isConstellation && (
               <ConstellationBeacon position={[0, 0, 0]} color="#ff007f" label="DEPLOYMENTS" size={5} onClick={() => setStation(1)} />
             )}
-            <group visible={!isConstellation && station === 1}>
-              <Monitor isHidden={isConstellation || station !== 1} position={[0, 0, 0]} rotation={[0, -0.1, 0]} width={projectsWidth} height={projectsHeight}>
+            {!isConstellation && station === 1 && (
+              <Monitor position={[0, 0, 0]} rotation={[0, -0.1, 0]} width={projectsWidth} height={projectsHeight}>
                 <Projects />
               </Monitor>
-            </group>
+            )}
           </group>
 
           {/* STATION 3: OPTICS ARCHIVE */}
@@ -617,11 +632,11 @@ export default function SpatialScene() {
             {isConstellation && (
               <ConstellationBeacon position={[0, 0, 0]} color="#a855f7" label="OPTICS ARCHIVE" size={5} onClick={() => setStation(2)} />
             )}
-            <group visible={!isConstellation && station === 2}>
-              <Monitor isHidden={isConstellation || station !== 2} position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={opticsWidth} height={opticsHeight}>
+            {!isConstellation && station === 2 && (
+              <Monitor position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={opticsWidth} height={opticsHeight}>
                 <OpticsArchive />
               </Monitor>
-            </group>
+            )}
           </group>
 
           {/* STATION 4: SUN TIMER SATELLITE */}
@@ -629,11 +644,11 @@ export default function SpatialScene() {
             {isConstellation && (
               <ConstellationBeacon position={[0, 0, 0]} color="#f59e0b" label="SUN TIMER" size={2.5} onClick={() => setStation(3)} />
             )}
-            <group visible={!isConstellation && station === 3}>
-              <Monitor isHidden={isConstellation || station !== 3} scrollable={false} position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={widgetWidth} height={widgetHeight}>
+            {!isConstellation && station === 3 && (
+              <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={widgetWidth} height={widgetHeight}>
                 <WidgetHub type="sun" onBack={() => setStation(6)} />
               </Monitor>
-            </group>
+            )}
           </group>
 
           {/* STATION 5: WEATHER RADAR SATELLITE */}
@@ -641,11 +656,11 @@ export default function SpatialScene() {
             {isConstellation && (
               <ConstellationBeacon position={[0, 0, 0]} color="#10b981" label="WEATHER" size={2.5} onClick={() => setStation(4)} />
             )}
-            <group visible={!isConstellation && station === 4}>
-              <Monitor isHidden={isConstellation || station !== 4} scrollable={false} position={[0, 0, 0]} rotation={[-0.1, -0.1, 0]} width={widgetWidth} height={widgetHeight}>
+            {!isConstellation && station === 4 && (
+              <Monitor scrollable={false} position={[0, 0, 0]} rotation={[-0.1, -0.1, 0]} width={widgetWidth} height={widgetHeight}>
                 <WidgetHub type="weather" onBack={() => setStation(6)} />
               </Monitor>
-            </group>
+            )}
           </group>
 
           {/* STATION 6: MONOPOLY TREASURY SATELLITE */}
@@ -653,19 +668,20 @@ export default function SpatialScene() {
             {isConstellation && (
               <ConstellationBeacon position={[0, 0, 0]} color="#eab308" label="MONOPOLY" size={2.5} onClick={() => setStation(5)} />
             )}
-            <group visible={!isConstellation && station === 5}>
-              <Monitor isHidden={isConstellation || station !== 5} scrollable={false} position={[0, 0, 0]} rotation={[0.1, 0.1, 0]} width={widgetWidth} height={widgetHeight}>
+            {!isConstellation && station === 5 && (
+              <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0.1, 0.1, 0]} width={widgetWidth} height={widgetHeight}>
                 <WidgetHub type="monopoly" onBack={() => setStation(6)} />
               </Monitor>
-            </group>
+            )}
           </group>
 
-          {/* Lightweight High-Performance Post-Processing */}
-          <EffectComposer multisampling={0} disableNormalPass>
-            <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.8} intensity={1.2} />
-            <Vignette eskil={false} offset={0.15} darkness={1.0} />
-            <ChromaticAberration offset={[0.001, 0.001]} />
-          </EffectComposer>
+          {/* Post-Processing: automatically omitted on mobile/low-end devices to avoid fillrate stalls */}
+          {!isLowEnd && (
+            <EffectComposer multisampling={0} disableNormalPass>
+              <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.8} intensity={1.1} />
+              <Vignette eskil={false} offset={0.15} darkness={0.9} />
+            </EffectComposer>
+          )}
 
         </Canvas>
       </div>
