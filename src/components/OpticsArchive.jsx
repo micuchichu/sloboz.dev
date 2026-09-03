@@ -55,6 +55,7 @@ export default function OpticsArchive() {
               src={photo.src} 
               alt={photo.title} 
               loading="lazy"
+              decoding="async"
               style={{ 
                 width: '100%', 
                 height: '100%', 

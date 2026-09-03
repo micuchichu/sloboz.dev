@@ -14,20 +14,25 @@ export default function Monitor({ position, rotation, children, width = 900, hei
     if (spinning && groupRef.current) {
       groupRef.current.rotation.y += delta * 0.2;
     }
-    if (groupRef.current) {
-      if (containerRef.current) {
-        groupRef.current.getWorldPosition(worldPos);
-        const distance = state.camera.position.distanceTo(worldPos);
-        
-        const targetOpacity = distance > 40 ? Math.max(0.15, 1 - (distance - 40) * 0.005) : 1;
-        const opacityStr = targetOpacity.toFixed(2);
-        if (containerRef.current.style.opacity !== opacityStr) {
-          containerRef.current.style.opacity = opacityStr;
+    if (groupRef.current && containerRef.current) {
+      groupRef.current.getWorldPosition(worldPos);
+      const distance = state.camera.position.distanceTo(worldPos);
+      
+      if (distance > 38) {
+        const targetOpacity = Math.max(0.15, 1 - (distance - 38) * 0.005).toFixed(2);
+        if (containerRef.current.style.opacity !== targetOpacity) {
+          containerRef.current.style.opacity = targetOpacity;
         }
-
         const targetPE = distance > 50 ? 'none' : 'auto';
         if (containerRef.current.style.pointerEvents !== targetPE) {
           containerRef.current.style.pointerEvents = targetPE;
+        }
+      } else {
+        if (containerRef.current.style.opacity !== '1') {
+          containerRef.current.style.opacity = '1';
+        }
+        if (containerRef.current.style.pointerEvents !== 'auto') {
+          containerRef.current.style.pointerEvents = 'auto';
         }
       }
     }
@@ -66,9 +71,9 @@ export default function Monitor({ position, rotation, children, width = 900, hei
             overscrollBehavior: 'contain',
             padding: width < 600 ? '1.25rem 1rem' : '2rem', 
             position: 'relative',
-            background: 'rgba(10, 9, 15, 0.94)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
+            background: 'rgba(10, 9, 15, 0.96)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
             border: hovered ? '1px solid rgba(0, 229, 255, 0.5)' : '1px solid rgba(255, 255, 255, 0.12)',
             boxShadow: hovered 
               ? '0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 229, 255, 0.25)' 
