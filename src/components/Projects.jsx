@@ -3,10 +3,10 @@ import { ArrowUpRight } from 'lucide-react';
 
 const projects = [
   {
-    title: 'Voxel Engine',
-    description: 'A custom-built voxel rendering engine in C++ and OpenGL. Features procedural chunk generation, greedy meshing algorithms, and efficient block rendering from scratch.',
-    tags: ['C++', 'OpenGL', 'GLSL', 'Procedural'],
-    link: 'https://github.com/micuchichu/voxel_engine',
+    title: 'ND Minesweeper',
+    description: 'N-dimensional Minesweeper in C++20 with Raylib: 2D, 3D and 4D hypercube boards, a 1-bit bomb board that generates a million cells in under 12 ms, a CRT shader pass, and online multiplayer over ENet and Steam P2P.',
+    tags: ['C++20', 'Raylib', 'GLSL', 'Multiplayer'],
+    link: 'https://github.com/micuchichu/nd-minesweeper',
     span: 2
   },
   {
