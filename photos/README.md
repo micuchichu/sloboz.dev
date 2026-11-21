@@ -13,9 +13,6 @@ For each photo the script:
 
 The gallery is sorted newest first, by the date the photo was taken.
 
-**Titles** come from the file name: `night-walk.jpg` shows as "Night Walk" in the lightbox. Camera
-names like `IMG_1234.jpg` or `20260511_093955.jpg` get no title.
-
 **Formats:** JPEG, PNG, WebP, TIFF, AVIF. iPhone HEIC files need to be exported as JPEG first.
 
 This folder is git-ignored (except this file) so your full-resolution originals, and their GPS

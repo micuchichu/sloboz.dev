@@ -1,9 +1,8 @@
 {
-  "version": 1,
+  "version": 2,
   "photos": [
     {
       "id": "atmosphere",
-      "title": "Atmosphere",
       "src": "./gallery/full/atmosphere-f16a3379.webp",
       "thumb": "./gallery/thumb/atmosphere-f16a3379.webp",
       "width": 739,
@@ -29,7 +28,6 @@
     },
     {
       "id": "brutalist-blocks",
-      "title": "Brutalist Blocks",
       "src": "./gallery/full/brutalist-blocks-50b2ebe5.webp",
       "thumb": "./gallery/thumb/brutalist-blocks-50b2ebe5.webp",
       "width": 739,
@@ -55,7 +53,6 @@
     },
     {
       "id": "skyline",
-      "title": "Skyline",
       "src": "./gallery/full/skyline-f261c31a.webp",
       "thumb": "./gallery/thumb/skyline-f261c31a.webp",
       "width": 739,
@@ -81,7 +78,6 @@
     },
     {
       "id": "perimeter",
-      "title": "Perimeter",
       "src": "./gallery/full/perimeter-bc983c42.webp",
       "thumb": "./gallery/thumb/perimeter-bc983c42.webp",
       "width": 739,
@@ -107,7 +103,6 @@
     },
     {
       "id": "industrial-node",
-      "title": "Industrial Node",
       "src": "./gallery/full/industrial-node-8b491be6.webp",
       "thumb": "./gallery/thumb/industrial-node-8b491be6.webp",
       "width": 739,
@@ -133,7 +128,6 @@
     },
     {
       "id": "night-walk",
-      "title": "Night Walk",
       "src": "./gallery/full/night-walk-39466a7b.webp",
       "thumb": "./gallery/thumb/night-walk-39466a7b.webp",
       "width": 739,
@@ -159,7 +153,6 @@
     },
     {
       "id": "bucharest-sector",
-      "title": "Bucharest Sector",
       "src": "./gallery/full/bucharest-sector-ad26eb43.webp",
       "thumb": "./gallery/thumb/bucharest-sector-ad26eb43.webp",
       "width": 739,
@@ -185,7 +178,6 @@
     },
     {
       "id": "urban-transit",
-      "title": "Urban Transit",
       "src": "./gallery/full/urban-transit-c1187d6c.webp",
       "thumb": "./gallery/thumb/urban-transit-c1187d6c.webp",
       "width": 739,

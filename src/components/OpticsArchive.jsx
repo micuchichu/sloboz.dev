@@ -12,6 +12,11 @@ function formatDate(takenAt) {
   return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+const altText = (photo) => {
+  const date = formatDate(photo.takenAt);
+  return date ? `Photo taken ${date}` : 'Photo';
+};
+
 function Thumb({ photo, eager }) {
   const [loaded, setLoaded] = useState(false);
   // Cached images can finish before React attaches onLoad
@@ -23,7 +28,7 @@ function Thumb({ photo, eager }) {
     <img
       ref={ref}
       src={photo.thumb}
-      alt={photo.title ?? ''}
+      alt={altText(photo)}
       width={photo.thumbWidth}
       height={photo.thumbHeight}
       loading={eager ? 'eager' : 'lazy'}
@@ -70,7 +75,7 @@ function Lightbox({ index, onClose, onStep }) {
   // Portal to <body>: inside drei's CSS-3D transform, position: fixed would be
   // relative to the tilted monitor instead of the viewport.
   return createPortal(
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label={photo.title ?? 'Photo'} onClick={onClose}>
+    <div className="lightbox" role="dialog" aria-modal="true" aria-label={`Photo ${index + 1} of ${photos.length}`} onClick={onClose}>
       <button className="lb-btn lb-close" onClick={onClose} autoFocus>
         <X size={16} />
         <span>Close</span>
@@ -89,14 +94,13 @@ function Lightbox({ index, onClose, onStep }) {
       <figure key={photo.id} onClick={(e) => e.stopPropagation()}>
         <img
           src={photo.src}
-          alt={photo.title ?? ''}
+          alt={altText(photo)}
           width={photo.width}
           height={photo.height}
           style={{ backgroundImage: `url(${photo.placeholder})` }}
         />
         <figcaption>
           <div className="lb-meta">
-            {photo.title && <span className="lb-title">{photo.title}</span>}
             {date && <span>{date}</span>}
             {gear && <span>{gear}</span>}
             <span className="lb-count mono">
@@ -141,7 +145,7 @@ export default function OpticsArchive() {
                 aspectRatio: `${photo.thumbWidth} / ${photo.thumbHeight}`,
                 backgroundImage: `url(${photo.placeholder})`,
               }}
-              aria-label={`Open photo${photo.title ? `: ${photo.title}` : ` ${idx + 1}`}`}
+              aria-label={`Open photo ${idx + 1}`}
             >
               <Thumb photo={photo} eager={idx < 4} />
             </button>

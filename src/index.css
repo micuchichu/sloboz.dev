@@ -453,9 +453,9 @@ button {
   color: var(--text-muted);
 }
 
-.lb-title {
-  color: #fff;
-  font-weight: 700;
+.lb-meta > span:first-child {
+  color: #e5e7eb;
+  font-weight: 600;
 }
 
 .lb-count {

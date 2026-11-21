@@ -21,7 +21,7 @@ const FULL_DIR = path.join(OUT_DIR, 'full');
 const THUMB_DIR = path.join(OUT_DIR, 'thumb');
 const MANIFEST = path.join(ROOT, 'src', 'data', 'gallery.json');
 
-const PIPELINE_VERSION = 1; // bump to force every photo to be regenerated
+const PIPELINE_VERSION = 2; // bump to force every photo to be regenerated
 const FULL_MAX = 1600;      // long edge of the lightbox image
 const THUMB_WIDTH = 540;    // grid thumbnail width (2x a ~270px card)
 const PLACEHOLDER_WIDTH = 16;
@@ -76,19 +76,6 @@ function toLocalISO(d) {
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-
-// Camera default names (IMG_1234, PXL_2026…, DSC0042…) don't make good titles
-const CAMERA_NAME = /^(img|dsc|dscf|dscn|pxl|mvimg|gopr|dji|pano|photo|image|screenshot|signal|whatsapp|p\d{6,}|\d{6,})/i;
-
-function titleFromFilename(name) {
-  const base = name.replace(/\.[^.]+$/, '').replace(/^\d{1,3}[\s._-]+/, ''); // drop "01-" order prefixes
-  if (CAMERA_NAME.test(base) || !/[a-z]{3}/i.test(base)) return null;
-  return base
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 }
 
 function slugify(name) {
@@ -159,7 +146,6 @@ async function processPhoto(file, slug, libs) {
 
   return {
     id: slug,
-    title: titleFromFilename(path.basename(file)),
     src: `./gallery/full/${name}`,
     thumb: `./gallery/thumb/${name}`,
     width: full.width,
