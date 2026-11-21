@@ -44,7 +44,7 @@ function SunTimer({ onBack }) {
       textAlign: 'center', 
       height: '100%', 
       padding: '1.5rem',
-      fontFamily: 'monospace',
+      fontFamily: 'var(--font-mono)',
       position: 'relative'
     }}>
       
@@ -180,7 +180,7 @@ function WorkInProgressCard({ title, icon, color = '#f59e0b', onBack }) {
         padding: '5px 16px',
         borderRadius: '4px',
         color: color,
-        fontFamily: 'monospace',
+        fontFamily: 'var(--font-mono)',
         fontSize: '0.82rem',
         fontWeight: 'bold',
         letterSpacing: '1.5px',
@@ -225,7 +225,7 @@ function WorkInProgressCard({ title, icon, color = '#f59e0b', onBack }) {
             color: color, 
             borderColor: `${color}60`,
             background: `${color}10`,
-            fontFamily: 'monospace',
+            fontFamily: 'var(--font-mono)',
             fontWeight: 'bold',
             letterSpacing: '1px'
           }}

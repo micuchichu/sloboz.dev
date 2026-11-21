@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "photos": [
+    {
+      "id": "atmosphere",
+      "title": "Atmosphere",
+      "src": "./gallery/full/atmosphere-f16a3379.webp",
+      "thumb": "./gallery/thumb/atmosphere-f16a3379.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRpwAAABXRUJQVlA4IJAAAAAwBQCdASoQACMAPt1cpE2opSOiNUgBEBuJZACdMoAEWi4KHtYEeP0X6gs17iLd1XSvwAD+ub2rymtJza+vhHgqZDJnS06bfwCa49BsSQUg9dZmoKGjShmKWsu5DgdCEFwGEdqInjIvm8dv++c9NrCuNr6OBBmkkuJTtZoHdFdfmSuvmd6U8xAyR+Riy+YAAAA=",
+      "takenAt": "2026-05-17T16:44:40",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "27mm",
+        "aperture": "f/1.7",
+        "shutter": "1/12000s",
+        "iso": "ISO 1600",
+        "ev": "−1.7 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "atmosphere.jpg",
+        "key": "2514542-1795268785342"
+      }
+    },
+    {
+      "id": "brutalist-blocks",
+      "title": "Brutalist Blocks",
+      "src": "./gallery/full/brutalist-blocks-50b2ebe5.webp",
+      "thumb": "./gallery/thumb/brutalist-blocks-50b2ebe5.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4IIoAAAAQBACdASoQACMAPt1Yo02opSMiNUgBEBuJaACo9ClgWpQIJWM6HtgUYAD+2fVGGxfKrTOKS27GAPU6CNE8fulKzPxx0sxYrv8tJgf27L7a3LdyuOfvUz5lef7y1qD6STluvK+KlXROWOq8Jycem+UWIOVJymCNstNeKg/pO3goisC8eRpw3cEAAAA=",
+      "takenAt": "2026-05-16T20:08:14",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "58mm",
+        "aperture": "f/1.7",
+        "shutter": "1/2000s",
+        "iso": "ISO 3200",
+        "ev": "+0.3 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "brutalist-blocks.jpg",
+        "key": "803186-1795268785236"
+      }
+    },
+    {
+      "id": "skyline",
+      "title": "Skyline",
+      "src": "./gallery/full/skyline-f261c31a.webp",
+      "thumb": "./gallery/thumb/skyline-f261c31a.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAAAwAwCdASoQACMAPuVipk2pJaOiNVgIASAciWUAuwAc5sEAAP7wQfuL4X8Q22tcOtC7K8nkUvKZMhW898Lc1HP7gAA=",
+      "takenAt": "2026-05-12T19:08:07",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "23mm",
+        "aperture": "f/1.7",
+        "shutter": "1/45s",
+        "iso": "ISO 50",
+        "ev": "−2 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "skyline.jpg",
+        "key": "1466049-1795268785134"
+      }
+    },
+    {
+      "id": "perimeter",
+      "title": "Perimeter",
+      "src": "./gallery/full/perimeter-bc983c42.webp",
+      "thumb": "./gallery/thumb/perimeter-bc983c42.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRqIAAABXRUJQVlA4IJYAAADwBACdASoQACMAPu1kqk6ppaOiKqwBMB2JYgCdMt8G6mg/Cg3Lz+KeT9qFFhdS6QAA/vDjaTTHNCX9786Mm6gwEWZBCvUuaNxVdpGxqxVGT4tlRkOmE9ZwMjVAtPy4LbrOvm+uiJsfjxEjHskrZea0MwnIXB6gqNtiUuvAwMSpidWPqu3LWbFHdoNU12mhFZ+V3IAAAAA=",
+      "takenAt": "2026-05-11T14:38:24",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "23mm",
+        "aperture": "f/1.7",
+        "shutter": "1/8000s",
+        "iso": "ISO 80",
+        "ev": "−1.3 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "perimeter.jpg",
+        "key": "3029417-1795268785028"
+      }
+    },
+    {
+      "id": "industrial-node",
+      "title": "Industrial Node",
+      "src": "./gallery/full/industrial-node-8b491be6.webp",
+      "thumb": "./gallery/thumb/industrial-node-8b491be6.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRoYAAABXRUJQVlA4IHoAAACQBACdASoQACMAPulip02pJaOiNVgIASAdCWcArAATli8XBAz3up2HTIViDrwA/R+xkDJliLtUSs4R0Mcr4FwhoOMGAsAc38Xvq+eXDRdPvriGcIwJ6HRXXXFj4gJQITUuYOb12axhXJld9+8MChzt0Bybo1M4CoAAAA==",
+      "takenAt": "2026-05-11T14:35:28",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "23mm",
+        "aperture": "f/1.7",
+        "shutter": "1/12000s",
+        "iso": "ISO 80",
+        "ev": "−2 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "industrial-node.jpg",
+        "key": "3423724-1795268784921"
+      }
+    },
+    {
+      "id": "night-walk",
+      "title": "Night Walk",
+      "src": "./gallery/full/night-walk-39466a7b.webp",
+      "thumb": "./gallery/thumb/night-walk-39466a7b.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRnYAAABXRUJQVlA4IGoAAACwAwCdASoQACMAPt1apE2opSOjNUgBEBuJYwCdMoAD7UfYfI5R0AD+vzwoe4m0qYRnCatS+ljP8yoNfI309aeVmfaDgBE5yHgowDXKNqxcb0RwHs0xYutt6DyvDWBAVbyOy1q2JkmrAAAA",
+      "takenAt": "2026-05-11T09:39:55",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "23mm",
+        "aperture": "f/1.7",
+        "shutter": "1/12000s",
+        "iso": "ISO 80",
+        "ev": "−0.3 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "night-walk.jpg",
+        "key": "1652464-1795268784819"
+      }
+    },
+    {
+      "id": "bucharest-sector",
+      "title": "Bucharest Sector",
+      "src": "./gallery/full/bucharest-sector-ad26eb43.webp",
+      "thumb": "./gallery/thumb/bucharest-sector-ad26eb43.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRqQAAABXRUJQVlA4IJgAAADwBACdASoQACMAPu1cqE2ppKOiNVgIATAdiWQAsO8sALGN4jo9IAZpV7iotRraLQAA/SGbsz7swMGcP8U1z34ymcPni+GqPM6sJfcPc1Bvm5uYUaOjnI/JECZRt/FEzRzd5/rcLQp/s2BjXAgt0GxS61ffcPzia7QBv2iAFCccOUFHLb0FqQxn7zbTt1wmZNpzndBDuAAAAA==",
+      "takenAt": "2026-04-28T19:29:04",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "58mm",
+        "aperture": "f/1.7",
+        "shutter": "1/1000s",
+        "iso": "ISO 50",
+        "ev": "−2 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "bucharest-sector.jpg",
+        "key": "1300924-1795268784632"
+      }
+    },
+    {
+      "id": "urban-transit",
+      "title": "Urban Transit",
+      "src": "./gallery/full/urban-transit-c1187d6c.webp",
+      "thumb": "./gallery/thumb/urban-transit-c1187d6c.webp",
+      "width": 739,
+      "height": 1600,
+      "thumbWidth": 540,
+      "thumbHeight": 1169,
+      "placeholder": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAAAQBACdASoQACMAPulipk2pJaOiNVgIASAdCUATpl0QP90OFUMXq3FtAAD+7BE6RL+WCY/g/R3+zYbsQvxuzOrzuuOfCY9yxm/Lrd1a4jHWGnRCPQnAP9dgjkqBqCJEHBw1Z5g34K3xQC8aPPy9OpFxvt4YnOxB+ROGY7kNwAA=",
+      "takenAt": "2026-04-19T12:16:35",
+      "exif": {
+        "camera": "Samsung Galaxy S25 Ultra",
+        "lens": null,
+        "focal": "23mm",
+        "aperture": "f/1.7",
+        "shutter": "1/3000s",
+        "iso": "ISO 50",
+        "ev": "−2 EV",
+        "wb": "Manual"
+      },
+      "source": {
+        "file": "urban-transit.jpg",
+        "key": "3005122-1795268784731"
+      }
+    }
+  ]
+}

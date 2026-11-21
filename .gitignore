@@ -2,3 +2,8 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# Original photos (full-res, with GPS/EXIF). Only the stripped web copies in
+# public/gallery/ and src/data/gallery.json get committed.
+photos/*
+!photos/README.md

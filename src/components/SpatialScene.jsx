@@ -1,107 +1,179 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useRef, useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import Monitor from './Monitor';
+import Monitor, { MONITOR_PX_TO_WORLD } from './Monitor';
 import Hero from './Hero';
 import WidgetHub from './WidgetHub';
 import Projects from './Projects';
-import OpticsArchive from './OpticsArchive';
+import { hideBoot } from '../boot';
+
+const Effects = lazy(() => import('./Effects'));
+// The gallery (and its photo list, which grows over time) stays out of the first bundle
+const loadOptics = () => import('./OpticsArchive');
+const OpticsArchive = lazy(loadOptics);
+
+const CAMERA_FOV = 60;
+const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV) / 2);
+// Exponential damping rate for camera flights (≈ the old 0.06-per-frame lerp at 60 fps,
+// but now independent of refresh rate: same speed on 30, 60 or 144 Hz screens)
+const CAMERA_DAMPING = 3.7;
+// Frame rate used while nothing is moving except the slow galaxy drift
+const IDLE_FPS = 30;
+const CONSTELLATION = 6;
+
+function readCapabilities() {
+  if (typeof window === 'undefined') return { isMobile: false, isLowEnd: false, reducedMotion: false };
+  const isMobile = window.innerWidth < 768;
+  const concurrency = navigator.hardwareConcurrency || 4;
+  const memory = navigator.deviceMemory || 8;
+  const isLowEnd = isMobile || concurrency <= 4 || memory < 4;
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  return { isMobile, isLowEnd, reducedMotion };
+}
 
 function useDeviceCapabilities() {
-  const [capabilities, setCapabilities] = useState(() => {
-    if (typeof window === 'undefined') return { isMobile: false, isLowEnd: false };
-    const isMobile = window.innerWidth < 768;
-    const concurrency = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
-    const memory = typeof navigator !== 'undefined' ? (navigator.deviceMemory || 8) : 8;
-    const isLowEnd = isMobile || concurrency <= 4 || memory < 4;
-    return { isMobile, isLowEnd };
-  });
+  const [capabilities, setCapabilities] = useState(readCapabilities);
 
   useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      const concurrency = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
-      const memory = typeof navigator !== 'undefined' ? (navigator.deviceMemory || 8) : 8;
-      const isLowEnd = isMobile || concurrency <= 4 || memory < 4;
-      setCapabilities({ isMobile, isLowEnd });
+    // Only re-render when a flag actually flips, not on every resize event
+    const update = () => {
+      const next = readCapabilities();
+      setCapabilities((prev) =>
+        prev.isMobile === next.isMobile && prev.isLowEnd === next.isLowEnd && prev.reducedMotion === next.reducedMotion
+          ? prev
+          : next
+      );
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', update);
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    mq?.addEventListener?.('change', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      mq?.removeEventListener?.('change', update);
+    };
   }, []);
 
   return capabilities;
 }
 
-function CameraController({ station, stations, isMobile }) {
+/**
+ * Camera distance that makes a monitor of pxW × pxH CSS pixels fit the viewport,
+ * leaving room for the HUD, and never magnifying it past 1:1 (keeps text crisp).
+ */
+function fitDistance(pxW, pxH, viewW, viewH, isMobile) {
+  const w = pxW * MONITOR_PX_TO_WORLD;
+  const h = pxH * MONITOR_PX_TO_WORLD;
+  const hudClearance = isMobile ? 64 : 88;
+  const availH = Math.max(0.5, (viewH - 2 * hudClearance) / viewH);
+  const availW = isMobile ? 0.94 : 0.9;
+  const fitHeight = h / (2 * TAN_HALF_FOV * availH);
+  const fitWidth = w / (2 * TAN_HALF_FOV * (viewW / viewH) * availW);
+  const oneToOne = (MONITOR_PX_TO_WORLD * viewH) / (2 * TAN_HALF_FOV);
+  return Math.max(fitHeight, fitWidth, oneToOne);
+}
+
+/**
+ * The canvas runs in "demand" mode. This drives it: every display frame while
+ * something is moving, and at IDLE_FPS otherwise (saves GPU/battery while reading).
+ */
+function FrameDriver({ activeRef, idleFps }) {
+  const invalidate = useThree((s) => s.invalidate);
+
+  useEffect(() => {
+    let raf;
+    let last = -Infinity;
+    const minGap = 1000 / idleFps;
+    const tick = (now) => {
+      raf = requestAnimationFrame(tick);
+      if (activeRef.current || now - last >= minGap - 2) {
+        last = now;
+        invalidate();
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [invalidate, idleFps, activeRef]);
+
+  return null;
+}
+
+function CameraController({ station, stations, isMobile, monitorSize, activeRef, reducedMotion }) {
   const controlsRef = useRef();
   const isTransitioningRef = useRef(false);
   const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
   const desiredPosVec = useMemo(() => new THREE.Vector3(), []);
   const constellationCenter = useMemo(() => new THREE.Vector3(10, 10, -80), []);
-  const constellationDefaultPos = useMemo(() => 
-    isMobile ? new THREE.Vector3(10, 200, 320) : new THREE.Vector3(10, 140, 210), 
+  const constellationDefaultPos = useMemo(() =>
+    isMobile ? new THREE.Vector3(10, 200, 320) : new THREE.Vector3(10, 140, 210),
     [isMobile]
   );
-  const isConstellation = station === 6;
+  const isConstellation = station === CONSTELLATION;
+  const size = useThree((s) => s.size);
+
+  const distance = useMemo(
+    () => (monitorSize ? fitDistance(monitorSize[0], monitorSize[1], size.width, size.height, isMobile) : 15),
+    [monitorSize, size.width, size.height, isMobile]
+  );
 
   useEffect(() => {
     isTransitioningRef.current = true;
+    activeRef.current = true;
     if (controlsRef.current) {
       controlsRef.current.enabled = false;
     }
-  }, [station]);
+  }, [station, activeRef]);
 
-  useFrame((state) => {
+  useFrame((state, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.1);
+    const t = reducedMotion ? 1 : 1 - Math.exp(-CAMERA_DAMPING * delta);
+    const camera = state.camera;
+
     if (isConstellation) {
       if (isTransitioningRef.current) {
-        const distPos = state.camera.position.distanceTo(constellationDefaultPos);
+        const distPos = camera.position.distanceTo(constellationDefaultPos);
         const distLook = lookAtTarget.current.distanceTo(constellationCenter);
 
         if (distPos > 0.5 || distLook > 0.5) {
-          state.camera.position.lerp(constellationDefaultPos, 0.06);
-          lookAtTarget.current.lerp(constellationCenter, 0.06);
-          state.camera.lookAt(lookAtTarget.current);
+          camera.position.lerp(constellationDefaultPos, t);
+          lookAtTarget.current.lerp(constellationCenter, t);
+          camera.lookAt(lookAtTarget.current);
+          activeRef.current = true;
         } else {
-          state.camera.position.copy(constellationDefaultPos);
+          camera.position.copy(constellationDefaultPos);
           lookAtTarget.current.copy(constellationCenter);
-          state.camera.lookAt(lookAtTarget.current);
+          camera.lookAt(lookAtTarget.current);
           isTransitioningRef.current = false;
+          activeRef.current = false;
           if (controlsRef.current) {
             controlsRef.current.target.copy(constellationCenter);
             controlsRef.current.enabled = true;
             controlsRef.current.update();
           }
         }
-      } else {
-        if (controlsRef.current && controlsRef.current.enabled) {
-          controlsRef.current.update();
-          lookAtTarget.current.copy(controlsRef.current.target);
-        }
+      } else if (controlsRef.current && controlsRef.current.enabled) {
+        controlsRef.current.update();
+        lookAtTarget.current.copy(controlsRef.current.target);
       }
-    } else {
-      const target = stations[station] || stations[0];
-      const cameraDistance = isMobile ? 16 : 15;
-      desiredPosVec.set(target.x, target.y, target.z + cameraDistance);
-
-      const distPos = state.camera.position.distanceTo(desiredPosVec);
-      const distLook = lookAtTarget.current.distanceTo(target);
-
-      if (distPos > 0.01) {
-        state.camera.position.lerp(desiredPosVec, 0.06);
-      } else {
-        state.camera.position.copy(desiredPosVec);
-      }
-
-      if (distLook > 0.01) {
-        lookAtTarget.current.lerp(target, 0.06);
-      } else {
-        lookAtTarget.current.copy(target);
-      }
-
-      state.camera.lookAt(lookAtTarget.current);
+      return;
     }
+
+    const target = stations[station] || stations[0];
+    desiredPosVec.set(target.x, target.y, target.z + distance);
+
+    const distPos = camera.position.distanceTo(desiredPosVec);
+    const distLook = lookAtTarget.current.distanceTo(target);
+    const moving = distPos > 0.01 || distLook > 0.01;
+
+    if (distPos > 0.01) camera.position.lerp(desiredPosVec, t);
+    else camera.position.copy(desiredPosVec);
+
+    if (distLook > 0.01) lookAtTarget.current.lerp(target, t);
+    else lookAtTarget.current.copy(target);
+
+    camera.lookAt(lookAtTarget.current);
+    activeRef.current = moving;
+    if (!moving) isTransitioningRef.current = false;
   });
 
   return (
@@ -137,6 +209,8 @@ function ConstellationLines({ stations }) {
     return new THREE.BufferGeometry().setFromPoints(points);
   }, [stations]);
 
+  useEffect(() => () => lineGeometry.dispose(), [lineGeometry]);
+
   return (
     <lineSegments geometry={lineGeometry}>
       <lineBasicMaterial color="#00e5ff" transparent opacity={0.35} depthWrite={false} depthTest={false} />
@@ -146,9 +220,11 @@ function ConstellationLines({ stations }) {
 
 function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
   const meshRef = useRef();
+  const wireRef = useRef();
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
   const targetScaleVec = useMemo(() => new THREE.Vector3(1, 1, 1), []);
+  const wireScaleVec = useMemo(() => new THREE.Vector3(1, 1, 1), []);
 
   useEffect(() => {
     return () => {
@@ -157,20 +233,28 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
   }, []);
 
   useFrame((state, delta) => {
+    const dt = Math.min(delta, 0.1);
+    const t = 1 - Math.exp(-6 * dt);
     if (meshRef.current) {
-      meshRef.current.rotation.x += delta * (hovered ? 1.0 : 0.4);
-      meshRef.current.rotation.y += delta * (hovered ? 1.4 : 0.6);
+      meshRef.current.rotation.x += dt * (hovered ? 1.0 : 0.4);
+      meshRef.current.rotation.y += dt * (hovered ? 1.4 : 0.6);
     }
     if (groupRef.current) {
       const s = hovered ? 1.35 : 1.0;
       targetScaleVec.set(s, s, s);
-      groupRef.current.scale.lerp(targetScaleVec, 0.1);
+      groupRef.current.scale.lerp(targetScaleVec, t);
+    }
+    if (wireRef.current) {
+      // Wireframe shell grows slightly more than the core on hover (scale, not a new geometry)
+      const w = hovered ? 1.25 / 1.15 : 1;
+      wireScaleVec.set(w, w, w);
+      wireRef.current.scale.lerp(wireScaleVec, t);
     }
   });
 
   return (
-    <group 
-      ref={groupRef} 
+    <group
+      ref={groupRef}
       position={position}
       onClick={(e) => {
         e.stopPropagation();
@@ -193,7 +277,7 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
         <sphereGeometry args={[Math.max(12, size * 2.4), 8, 8]} />
         <meshBasicMaterial />
       </mesh>
-      
+
       {/* Solid rotating core */}
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[size, 0]} />
@@ -201,28 +285,24 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
       </mesh>
 
       {/* Glowing outer wireframe */}
-      <mesh>
-        <icosahedronGeometry args={[hovered ? size * 1.25 : size * 1.15, 0]} />
+      <mesh ref={wireRef}>
+        <icosahedronGeometry args={[size * 1.15, 0]} />
         <meshBasicMaterial color={color} transparent opacity={hovered ? 0.65 : 0.35} wireframe />
       </mesh>
 
-      {/* Crisp Always-Readable Floating Label Badge */}
       {label && (
         <Html
           center
           position={[0, -(size + 4), 0]}
           zIndexRange={[0, 0]}
-          style={{
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
+          style={{ pointerEvents: 'none', userSelect: 'none' }}
         >
           <div style={{
-            fontFamily: 'monospace',
-            fontSize: size < 4 ? '11px' : '12.5px',
-            fontWeight: 'bold',
-            letterSpacing: '1.5px',
-            color: color,
+            fontFamily: 'var(--font-mono)',
+            fontSize: size < 4 ? '10.5px' : '12px',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            color,
             textShadow: `0 0 10px ${color}`,
             background: 'rgba(5, 5, 12, 0.88)',
             padding: size < 4 ? '3px 8px' : '4px 10px',
@@ -242,27 +322,30 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
   );
 }
 
-function ProceduralGalaxy({ isLowEnd = false }) {
+function makeStarTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  gradient.addColorStop(0.2, 'rgba(220, 245, 255, 0.8)');
+  gradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.25)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function ProceduralGalaxy({ isLowEnd = false, reducedMotion = false }) {
   const galaxyRef = useRef();
   const dustRef = useRef();
 
-  // Create soft radial glow star particle texture once
-  const starTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    gradient.addColorStop(0.2, 'rgba(220, 245, 255, 0.8)');
-    gradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.25)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 32, 32);
-    return new THREE.CanvasTexture(canvas);
-  }, []);
+  // Soft radial glow star sprite, created once
+  const starTexture = useMemo(makeStarTexture, []);
+  useEffect(() => () => starTexture.dispose(), [starTexture]);
 
-  // Adaptive particle counts: scaled down on low-end devices for silky 60fps
+  // Adaptive particle counts: scaled down on low-end devices
   const { positions, colors } = useMemo(() => {
     const count = isLowEnd ? 8000 : 20000;
     const arms = 3;
@@ -278,6 +361,9 @@ function ProceduralGalaxy({ isLowEnd = false }) {
     const colorCyan = new THREE.Color('#00e5ff');
     const colorPurple = new THREE.Color('#a855f7');
     const colorMagenta = new THREE.Color('#ff007f');
+    const tintCyan = new THREE.Color('#67e8f9');
+    const tintGold = new THREE.Color('#fef08a');
+    const mixed = new THREE.Color();
 
     for (let i = 0; i < count; i++) {
       const r = Math.pow(Math.random(), 1.5) * radius;
@@ -294,30 +380,29 @@ function ProceduralGalaxy({ isLowEnd = false }) {
       pos[i * 3 + 1] = rY;
       pos[i * 3 + 2] = Math.sin(branchAngle + spinAngle) * r + rZ;
 
-      const mixedColor = new THREE.Color();
       if (normalizedR < 0.25) {
-        mixedColor.copy(colorCore).lerp(colorCyan, normalizedR / 0.25);
+        mixed.copy(colorCore).lerp(colorCyan, normalizedR / 0.25);
       } else if (normalizedR < 0.65) {
-        mixedColor.copy(colorCyan).lerp(colorPurple, (normalizedR - 0.25) / 0.4);
+        mixed.copy(colorCyan).lerp(colorPurple, (normalizedR - 0.25) / 0.4);
       } else {
-        mixedColor.copy(colorPurple).lerp(colorMagenta, (normalizedR - 0.65) / 0.35);
+        mixed.copy(colorPurple).lerp(colorMagenta, (normalizedR - 0.65) / 0.35);
       }
 
       if (Math.random() > 0.9) {
-        mixedColor.lerp(new THREE.Color('#67e8f9'), 0.3);
+        mixed.lerp(tintCyan, 0.3);
       } else if (Math.random() > 0.95) {
-        mixedColor.lerp(new THREE.Color('#fef08a'), 0.4);
+        mixed.lerp(tintGold, 0.4);
       }
 
-      col[i * 3] = mixedColor.r;
-      col[i * 3 + 1] = mixedColor.g;
-      col[i * 3 + 2] = mixedColor.b;
+      col[i * 3] = mixed.r;
+      col[i * 3 + 1] = mixed.g;
+      col[i * 3 + 2] = mixed.b;
     }
 
     return { positions: pos, colors: col };
   }, [isLowEnd]);
 
-  // Adaptive Nebula Gas Clouds (Eliminates Fill-Rate Overdraw)
+  // Nebula gas clouds (few, large, faint sprites)
   const { dustPositions, dustColors } = useMemo(() => {
     const dustCount = isLowEnd ? 300 : 1000;
     const arms = 3;
@@ -332,6 +417,7 @@ function ProceduralGalaxy({ isLowEnd = false }) {
     const dustCyan = new THREE.Color('#00e5ff');
     const dustPurple = new THREE.Color('#9333ea');
     const dustMagenta = new THREE.Color('#ec4899');
+    const mixed = new THREE.Color();
 
     for (let i = 0; i < dustCount; i++) {
       const r = Math.pow(Math.random(), 1.3) * radius;
@@ -347,7 +433,6 @@ function ProceduralGalaxy({ isLowEnd = false }) {
       pos[i * 3 + 1] = rY;
       pos[i * 3 + 2] = Math.sin(branchAngle + spinAngle) * r + rZ;
 
-      const mixed = new THREE.Color();
       if (normalizedR < 0.5) {
         mixed.copy(dustCyan).lerp(dustPurple, normalizedR / 0.5);
       } else {
@@ -363,12 +448,10 @@ function ProceduralGalaxy({ isLowEnd = false }) {
   }, [isLowEnd]);
 
   useFrame((state, delta) => {
-    if (galaxyRef.current) {
-      galaxyRef.current.rotation.y += delta * 0.01;
-    }
-    if (dustRef.current) {
-      dustRef.current.rotation.y += delta * 0.008;
-    }
+    if (reducedMotion) return;
+    const dt = Math.min(delta, 0.1);
+    if (galaxyRef.current) galaxyRef.current.rotation.y += dt * 0.01;
+    if (dustRef.current) dustRef.current.rotation.y += dt * 0.008;
   });
 
   return (
@@ -412,7 +495,7 @@ function ProceduralGalaxy({ isLowEnd = false }) {
 
 function DistantStarfield({ isLowEnd = false }) {
   const count = isLowEnd ? 1500 : 3500;
-  
+
   const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -433,10 +516,17 @@ function DistantStarfield({ isLowEnd = false }) {
   );
 }
 
+const NAV_ITEMS = [
+  { station: 2, label: 'OPTICS', color: '#a855f7' },
+  { station: 0, label: 'CORE', color: '#00e5ff' },
+  { station: 1, label: 'DEPLOYMENTS', short: 'DEPLOY', color: '#ff007f' },
+];
+
 export default function SpatialScene() {
   const [station, setStation] = useState(0);
-  const { isMobile, isLowEnd } = useDeviceCapabilities();
-  
+  const { isMobile, isLowEnd, reducedMotion } = useDeviceCapabilities();
+  const activeRef = useRef(true);
+
   // Fixed asymmetrical constellation layout with 6 stations
   const stations = useMemo(() => [
     new THREE.Vector3(0, 0, 0),             // 0: Core
@@ -447,22 +537,31 @@ export default function SpatialScene() {
     new THREE.Vector3(110, -50, -160)       // 5: Monopoly Treasury
   ], []);
 
-  const isConstellation = station === 6;
+  const isConstellation = station === CONSTELLATION;
 
-  // Dynamic responsive dimensions for 3D Monitors
-  const coreWidth = isMobile ? 380 : 900;
-  const coreHeight = isMobile ? 560 : 500;
-  const projectsWidth = isMobile ? 380 : 1000;
-  const projectsHeight = isMobile ? 680 : 800;
-  const opticsWidth = isMobile ? 380 : 1200;
-  const opticsHeight = isMobile ? 680 : 800;
-  const widgetWidth = isMobile ? 360 : 680;
-  const widgetHeight = isMobile ? 500 : 460;
+  // Responsive monitor dimensions (CSS px), per station
+  const monitorSizes = useMemo(() => {
+    const widget = isMobile ? [360, 500] : [680, 460];
+    return [
+      isMobile ? [380, 560] : [900, 500],   // Core
+      isMobile ? [380, 680] : [1000, 800],  // Deployments
+      isMobile ? [380, 680] : [1200, 800],  // Optics
+      widget, widget, widget,
+    ];
+  }, [isMobile]);
+
+  const goToMap = () => setStation(CONSTELLATION);
+
+  // Prefetch the gallery chunk once the scene has settled, so opening Optics is instant
+  useEffect(() => {
+    const t = setTimeout(loadOptics, 2500);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#030204', position: 'relative', overflow: 'hidden' }}>
-      
-      {/* Zero-cost GPU radial vignette overlay */}
+    <div style={{ position: 'fixed', inset: 0, background: '#030204', overflow: 'hidden' }}>
+
+      {/* Zero-cost radial vignette overlay */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -471,220 +570,146 @@ export default function SpatialScene() {
         zIndex: 2
       }} />
 
-      {/* 2D HUD Navigation Overlay */}
-      <div style={{
-        position: 'absolute',
-        top: isMobile ? 'max(0.8rem, env(safe-area-inset-top, 0.8rem))' : '1.8rem',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 99999999,
-        display: 'flex',
-        alignItems: 'center',
-        gap: isMobile ? '4px' : '6px',
-        background: 'rgba(10, 9, 16, 0.88)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        padding: isMobile ? '0.35rem 0.45rem' : '0.45rem 0.65rem',
-        borderRadius: '35px',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
-        maxWidth: 'calc(100vw - 1rem)',
-        width: 'max-content',
-        boxSizing: 'border-box'
-      }}>
-        <button 
-          onClick={() => setStation(2)} 
-          style={{ 
-            background: station === 2 ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 
-            color: station === 2 ? '#ffffff' : 'var(--text-muted)', 
-            border: station === 2 ? '1px solid rgba(168, 85, 247, 0.6)' : '1px solid transparent', 
-            padding: isMobile ? '7px 11px' : '8px 16px', 
-            borderRadius: '20px', 
-            cursor: 'pointer', 
-            fontFamily: 'monospace', 
-            fontWeight: '700', 
-            fontSize: isMobile ? '0.78rem' : '0.85rem',
-            letterSpacing: '0.5px',
-            touchAction: 'manipulation',
-            boxShadow: station === 2 ? '0 0 16px rgba(168, 85, 247, 0.4)' : 'none',
-            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)' 
-          }}
-        >
-          OPTICS
+      <nav className="hud" aria-label="Sections">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.station}
+            className="hud-btn"
+            style={{ '--c': item.color }}
+            aria-current={station === item.station}
+            onClick={() => setStation(item.station)}
+          >
+            {isMobile && item.short ? item.short : item.label}
+          </button>
+        ))}
+
+        <div className="hud-sep" aria-hidden="true" />
+
+        <button className="hud-btn hud-btn--map" aria-current={isConstellation} onClick={goToMap}>
+          <span aria-hidden="true">✦</span> {isMobile ? 'MAP' : 'CONSTELLATION'}
         </button>
-        <button 
-          onClick={() => setStation(0)} 
-          style={{ 
-            background: station === 0 ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 
-            color: station === 0 ? '#ffffff' : 'var(--text-muted)', 
-            border: station === 0 ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid transparent', 
-            padding: isMobile ? '7px 11px' : '8px 16px', 
-            borderRadius: '20px', 
-            cursor: 'pointer', 
-            fontFamily: 'monospace', 
-            fontWeight: '700', 
-            fontSize: isMobile ? '0.78rem' : '0.85rem',
-            letterSpacing: '0.5px',
-            touchAction: 'manipulation',
-            boxShadow: station === 0 ? '0 0 16px rgba(0, 229, 255, 0.4)' : 'none',
-            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)' 
-          }}
-        >
-          CORE
-        </button>
-        <button 
-          onClick={() => setStation(1)} 
-          style={{ 
-            background: station === 1 ? 'rgba(255, 255, 255, 0.15)' : 'transparent', 
-            color: station === 1 ? '#ffffff' : 'var(--text-muted)', 
-            border: station === 1 ? '1px solid rgba(255, 0, 127, 0.6)' : '1px solid transparent', 
-            padding: isMobile ? '7px 11px' : '8px 16px', 
-            borderRadius: '20px', 
-            cursor: 'pointer', 
-            fontFamily: 'monospace', 
-            fontWeight: '700', 
-            fontSize: isMobile ? '0.78rem' : '0.85rem',
-            letterSpacing: '0.5px',
-            touchAction: 'manipulation',
-            boxShadow: station === 1 ? '0 0 16px rgba(255, 0, 127, 0.4)' : 'none',
-            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)' 
-          }}
-        >
-          {isMobile ? 'DEPLOY' : 'DEPLOYMENTS'}
-        </button>
-        
-        <div style={{ width: '1px', height: isMobile ? '14px' : '18px', background: 'rgba(255,255,255,0.18)', margin: '0 2px' }} />
-        
-        <button 
-          onClick={() => setStation(6)} 
-          style={{ 
-            background: station === 6 ? 'linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(255, 0, 127, 0.3))' : 'rgba(255,255,255,0.04)', 
-            color: station === 6 ? '#ffffff' : 'var(--accent-1)', 
-            border: station === 6 ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(0, 229, 255, 0.25)', 
-            padding: isMobile ? '7px 11px' : '8px 16px', 
-            borderRadius: '20px', 
-            cursor: 'pointer', 
-            fontFamily: 'monospace', 
-            fontWeight: '700', 
-            fontSize: isMobile ? '0.78rem' : '0.85rem',
-            letterSpacing: '0.5px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            touchAction: 'manipulation',
-            boxShadow: station === 6 ? '0 0 20px rgba(0, 229, 255, 0.4)' : 'none',
-            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
-          }}
-        >
-          <span style={{ fontSize: '0.85rem' }}>✦</span> {isMobile ? 'MAP' : 'CONSTELLATION'}
-        </button>
-      </div>
+      </nav>
 
-      <div style={{ width: '100%', height: '100%' }}>
-        <Canvas 
-          camera={{ position: [0, 2, 15], fov: 60 }} 
-          dpr={isLowEnd ? [0.75, 1] : 1} 
-          gl={{ 
-            powerPreference: 'high-performance', 
-            antialias: false, 
-            stencil: false, 
-            depth: true,
-            alpha: false,
-            precision: isLowEnd ? 'mediump' : 'highp'
-          }}
-          style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}
-        >
-          <color attach="background" args={['#030204']} />
-          
-          <DistantStarfield isLowEnd={isLowEnd} />
-          <ProceduralGalaxy isLowEnd={isLowEnd} />
-          
-          {isConstellation && <ConstellationLines stations={stations} />}
+      {isConstellation && (
+        <div className="hud-hint">
+          {isMobile ? 'drag to orbit · tap a star' : 'drag to orbit · scroll to zoom · click a star'}
+        </div>
+      )}
 
-          <CameraController station={station} stations={stations} isMobile={isMobile} />
+      <Canvas
+        frameloop="demand"
+        camera={{ position: [0, 2, 15], fov: CAMERA_FOV }}
+        dpr={isLowEnd ? [0.75, 1] : 1}
+        gl={{
+          powerPreference: 'high-performance',
+          antialias: false,
+          stencil: false,
+          depth: true,
+          alpha: false,
+          precision: isLowEnd ? 'mediump' : 'highp'
+        }}
+        style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}
+        onCreated={() => requestAnimationFrame(() => requestAnimationFrame(hideBoot))}
+      >
+        <color attach="background" args={['#030204']} />
 
-          {/* STATION 1: CORE */}
-          <group position={stations[0]}>
-            {isConstellation && (
-              <ConstellationBeacon position={[0, 0, 0]} color="#00e5ff" label="CORE" size={5} onClick={() => setStation(0)} />
-            )}
-            {!isConstellation && station === 0 && (
-              <Monitor position={[0, 0, 0]} rotation={[0, 0, 0]} width={coreWidth} height={coreHeight}>
-                <Hero />
-              </Monitor>
-            )}
-          </group>
+        <FrameDriver activeRef={activeRef} idleFps={reducedMotion ? 15 : IDLE_FPS} />
 
-          {/* STATION 2: DEPLOYMENTS */}
-          <group position={stations[1]}>
-            {isConstellation && (
-              <ConstellationBeacon position={[0, 0, 0]} color="#ff007f" label="DEPLOYMENTS" size={5} onClick={() => setStation(1)} />
-            )}
-            {!isConstellation && station === 1 && (
-              <Monitor position={[0, 0, 0]} rotation={[0, -0.1, 0]} width={projectsWidth} height={projectsHeight}>
-                <Projects />
-              </Monitor>
-            )}
-          </group>
+        <DistantStarfield isLowEnd={isLowEnd} />
+        <ProceduralGalaxy isLowEnd={isLowEnd} reducedMotion={reducedMotion} />
 
-          {/* STATION 3: OPTICS ARCHIVE */}
-          <group position={stations[2]}>
-            {isConstellation && (
-              <ConstellationBeacon position={[0, 0, 0]} color="#a855f7" label="OPTICS ARCHIVE" size={5} onClick={() => setStation(2)} />
-            )}
-            {!isConstellation && station === 2 && (
-              <Monitor position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={opticsWidth} height={opticsHeight}>
-                <OpticsArchive />
-              </Monitor>
-            )}
-          </group>
+        {isConstellation && <ConstellationLines stations={stations} />}
 
-          {/* STATION 4: SUN TIMER SATELLITE */}
-          <group position={stations[3]}>
-            {isConstellation && (
-              <ConstellationBeacon position={[0, 0, 0]} color="#f59e0b" label="SUN TIMER" size={2.5} onClick={() => setStation(3)} />
-            )}
-            {!isConstellation && station === 3 && (
-              <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={widgetWidth} height={widgetHeight}>
-                <WidgetHub type="sun" onBack={() => setStation(6)} />
-              </Monitor>
-            )}
-          </group>
+        <CameraController
+          station={station}
+          stations={stations}
+          isMobile={isMobile}
+          monitorSize={isConstellation ? null : monitorSizes[station]}
+          activeRef={activeRef}
+          reducedMotion={reducedMotion}
+        />
 
-          {/* STATION 5: WEATHER RADAR SATELLITE */}
-          <group position={stations[4]}>
-            {isConstellation && (
-              <ConstellationBeacon position={[0, 0, 0]} color="#10b981" label="WEATHER" size={2.5} onClick={() => setStation(4)} />
-            )}
-            {!isConstellation && station === 4 && (
-              <Monitor scrollable={false} position={[0, 0, 0]} rotation={[-0.1, -0.1, 0]} width={widgetWidth} height={widgetHeight}>
-                <WidgetHub type="weather" onBack={() => setStation(6)} />
-              </Monitor>
-            )}
-          </group>
-
-          {/* STATION 6: MONOPOLY TREASURY SATELLITE */}
-          <group position={stations[5]}>
-            {isConstellation && (
-              <ConstellationBeacon position={[0, 0, 0]} color="#eab308" label="MONOPOLY" size={2.5} onClick={() => setStation(5)} />
-            )}
-            {!isConstellation && station === 5 && (
-              <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0.1, 0.1, 0]} width={widgetWidth} height={widgetHeight}>
-                <WidgetHub type="monopoly" onBack={() => setStation(6)} />
-              </Monitor>
-            )}
-          </group>
-
-          {/* Post-Processing: automatically omitted on mobile/low-end devices to avoid fillrate stalls */}
-          {!isLowEnd && (
-            <EffectComposer multisampling={0} disableNormalPass>
-              <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.8} intensity={1.1} />
-              <Vignette eskil={false} offset={0.15} darkness={0.9} />
-            </EffectComposer>
+        {/* STATION 1: CORE */}
+        <group position={stations[0]}>
+          {isConstellation && (
+            <ConstellationBeacon position={[0, 0, 0]} color="#00e5ff" label="CORE" size={5} onClick={() => setStation(0)} />
           )}
+          {station === 0 && (
+            <Monitor position={[0, 0, 0]} rotation={[0, 0, 0]} width={monitorSizes[0][0]} height={monitorSizes[0][1]} accent="#00e5ff">
+              <Hero />
+            </Monitor>
+          )}
+        </group>
 
-        </Canvas>
-      </div>
+        {/* STATION 2: DEPLOYMENTS */}
+        <group position={stations[1]}>
+          {isConstellation && (
+            <ConstellationBeacon position={[0, 0, 0]} color="#ff007f" label="DEPLOYMENTS" size={5} onClick={() => setStation(1)} />
+          )}
+          {station === 1 && (
+            <Monitor position={[0, 0, 0]} rotation={[0, -0.1, 0]} width={monitorSizes[1][0]} height={monitorSizes[1][1]} accent="#ff007f">
+              <Projects />
+            </Monitor>
+          )}
+        </group>
+
+        {/* STATION 3: OPTICS ARCHIVE */}
+        <group position={stations[2]}>
+          {isConstellation && (
+            <ConstellationBeacon position={[0, 0, 0]} color="#a855f7" label="OPTICS ARCHIVE" size={5} onClick={() => setStation(2)} />
+          )}
+          {station === 2 && (
+            <Monitor position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={monitorSizes[2][0]} height={monitorSizes[2][1]} accent="#a855f7">
+              <Suspense fallback={null}>
+                <OpticsArchive />
+              </Suspense>
+            </Monitor>
+          )}
+        </group>
+
+        {/* STATION 4: SUN TIMER SATELLITE */}
+        <group position={stations[3]}>
+          {isConstellation && (
+            <ConstellationBeacon position={[0, 0, 0]} color="#f59e0b" label="SUN TIMER" size={2.5} onClick={() => setStation(3)} />
+          )}
+          {station === 3 && (
+            <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={monitorSizes[3][0]} height={monitorSizes[3][1]} accent="#ffb000">
+              <WidgetHub type="sun" onBack={goToMap} />
+            </Monitor>
+          )}
+        </group>
+
+        {/* STATION 5: WEATHER RADAR SATELLITE */}
+        <group position={stations[4]}>
+          {isConstellation && (
+            <ConstellationBeacon position={[0, 0, 0]} color="#10b981" label="WEATHER" size={2.5} onClick={() => setStation(4)} />
+          )}
+          {station === 4 && (
+            <Monitor scrollable={false} position={[0, 0, 0]} rotation={[-0.1, -0.1, 0]} width={monitorSizes[4][0]} height={monitorSizes[4][1]} accent="#10b981">
+              <WidgetHub type="weather" onBack={goToMap} />
+            </Monitor>
+          )}
+        </group>
+
+        {/* STATION 6: MONOPOLY TREASURY SATELLITE */}
+        <group position={stations[5]}>
+          {isConstellation && (
+            <ConstellationBeacon position={[0, 0, 0]} color="#eab308" label="MONOPOLY" size={2.5} onClick={() => setStation(5)} />
+          )}
+          {station === 5 && (
+            <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0.1, 0.1, 0]} width={monitorSizes[5][0]} height={monitorSizes[5][1]} accent="#eab308">
+              <WidgetHub type="monopoly" onBack={goToMap} />
+            </Monitor>
+          )}
+        </group>
+
+        {/* Post-processing: skipped (and never downloaded) on mobile/low-end devices */}
+        {!isLowEnd && (
+          <Suspense fallback={null}>
+            <Effects />
+          </Suspense>
+        )}
+      </Canvas>
     </div>
   );
 }
