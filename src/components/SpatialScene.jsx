@@ -6,6 +6,7 @@ import Monitor, { MONITOR_PX_TO_WORLD } from './Monitor';
 import Hero from './Hero';
 import WidgetHub from './WidgetHub';
 import Projects from './Projects';
+import SpaceDecor from './SpaceDecor';
 import { hideBoot } from '../boot';
 
 const Effects = lazy(() => import('./Effects'));
@@ -213,12 +214,15 @@ function ConstellationLines({ stations }) {
 
   return (
     <lineSegments geometry={lineGeometry}>
-      <lineBasicMaterial color="#00e5ff" transparent opacity={0.35} depthWrite={false} depthTest={false} />
+      <lineBasicMaterial color="#ffffff" transparent opacity={0.14} depthWrite={false} depthTest={false} />
     </lineSegments>
   );
 }
 
-function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
+const BEACON_COLOR = '#e9e7e2';
+const ACCENT = '#ff6a3d';
+
+function ConstellationBeacon({ position, onClick, label, index, size = 5 }) {
   const meshRef = useRef();
   const wireRef = useRef();
   const groupRef = useRef();
@@ -281,13 +285,13 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
       {/* Solid rotating core */}
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[size, 0]} />
-        <meshBasicMaterial color={color} />
+        <meshBasicMaterial color={hovered ? ACCENT : BEACON_COLOR} />
       </mesh>
 
       {/* Glowing outer wireframe */}
       <mesh ref={wireRef}>
         <icosahedronGeometry args={[size * 1.15, 0]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.65 : 0.35} wireframe />
+        <meshBasicMaterial color={hovered ? ACCENT : BEACON_COLOR} transparent opacity={hovered ? 0.7 : 0.25} wireframe />
       </mesh>
 
       {label && (
@@ -297,24 +301,8 @@ function ConstellationBeacon({ position, color, onClick, label, size = 5 }) {
           zIndexRange={[0, 0]}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
         >
-          <div style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: size < 4 ? '10.5px' : '12px',
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            color,
-            textShadow: `0 0 10px ${color}`,
-            background: 'rgba(5, 5, 12, 0.88)',
-            padding: size < 4 ? '3px 8px' : '4px 10px',
-            borderRadius: '12px',
-            border: `1px solid ${color}66`,
-            boxShadow: `0 0 14px ${color}33`,
-            whiteSpace: 'nowrap',
-            textTransform: 'uppercase',
-            transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            transform: hovered ? 'scale(1.15)' : 'scale(1)',
-          }}>
-            {label}
+          <div className={`beacon-label${hovered ? ' is-hover' : ''}`}>
+            <span className="idx">{index}</span>{label}
           </div>
         </Html>
       )}
@@ -330,7 +318,7 @@ function makeStarTexture() {
   const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
   gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
   gradient.addColorStop(0.2, 'rgba(220, 245, 255, 0.8)');
-  gradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.25)');
+  gradient.addColorStop(0.5, 'rgba(170, 190, 255, 0.22)');
   gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 32, 32);
@@ -357,12 +345,12 @@ function ProceduralGalaxy({ isLowEnd = false, reducedMotion = false }) {
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
 
-    const colorCore = new THREE.Color('#fff7ed');
-    const colorCyan = new THREE.Color('#00e5ff');
-    const colorPurple = new THREE.Color('#a855f7');
-    const colorMagenta = new THREE.Color('#ff007f');
-    const tintCyan = new THREE.Color('#67e8f9');
-    const tintGold = new THREE.Color('#fef08a');
+    const colorCore = new THREE.Color('#fff2e0');
+    const colorCyan = new THREE.Color('#9db8ff');
+    const colorPurple = new THREE.Color('#6c74c9');
+    const colorMagenta = new THREE.Color('#b07a9c');
+    const tintCyan = new THREE.Color('#d5e3ff');
+    const tintGold = new THREE.Color('#ffe2b0');
     const mixed = new THREE.Color();
 
     for (let i = 0; i < count; i++) {
@@ -414,9 +402,9 @@ function ProceduralGalaxy({ isLowEnd = false, reducedMotion = false }) {
     const pos = new Float32Array(dustCount * 3);
     const col = new Float32Array(dustCount * 3);
 
-    const dustCyan = new THREE.Color('#00e5ff');
-    const dustPurple = new THREE.Color('#9333ea');
-    const dustMagenta = new THREE.Color('#ec4899');
+    const dustCyan = new THREE.Color('#3f63b5');
+    const dustPurple = new THREE.Color('#4b3f8f');
+    const dustMagenta = new THREE.Color('#7d4565');
     const mixed = new THREE.Color();
 
     for (let i = 0; i < dustCount; i++) {
@@ -493,57 +481,81 @@ function ProceduralGalaxy({ isLowEnd = false, reducedMotion = false }) {
   );
 }
 
-function DistantStarfield({ isLowEnd = false }) {
-  const count = isLowEnd ? 1500 : 3500;
+// Station layout + labels. `idx` is the number shown in the HUD and on the map.
+const STATIONS = [
+  { id: 0, idx: '02', name: 'Core', meta: 'Profile', pos: [0, 0, 0], rot: [0, 0, 0], size: 5 },
+  { id: 1, idx: '03', name: 'Deployments', short: 'Work', meta: 'Selected work', pos: [180, 60, -120], rot: [0, -0.1, 0], size: 5 },
+  { id: 2, idx: '01', name: 'Optics', meta: 'Photography', pos: [-150, -40, -160], rot: [0, 0.1, 0], size: 5 },
+  { id: 3, idx: '04', name: 'Sun', meta: 'Sol · G2V', pos: [-60, -40, 40], rot: [0, 0.1, 0], size: 2.5, widget: 'sun' },
+  { id: 4, idx: '05', name: 'Weather', meta: 'In development', pos: [70, 75, -40], rot: [-0.1, -0.1, 0], size: 2.5, widget: 'weather' },
+  { id: 5, idx: '06', name: 'Monopoly', meta: 'In development', pos: [110, -50, -160], rot: [0.1, 0.1, 0], size: 2.5, widget: 'monopoly' },
+];
+const NAV_ORDER = [2, 0, 1];
 
-  const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 4500;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 4500;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 4500;
-    }
-    return pos;
-  }, [count]);
-
-  return (
-    <points frustumCulled={false}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
-      </bufferGeometry>
-      <pointsMaterial size={1.5} color="#ffffff" sizeAttenuation={false} transparent opacity={0.65} depthWrite={false} depthTest={false} />
-    </points>
-  );
+function readFxPref() {
+  try { return localStorage.getItem('sloboz-fx') !== 'off'; } catch { return true; }
 }
 
-const NAV_ITEMS = [
-  { station: 2, label: 'OPTICS', color: '#a855f7' },
-  { station: 0, label: 'CORE', color: '#00e5ff' },
-  { station: 1, label: 'DEPLOYMENTS', short: 'DEPLOY', color: '#ff007f' },
-];
+const fmtCoord = (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(1).padStart(5, '0')}`;
+
+/** Writes the live camera position into the HUD (DOM write only when it changes). */
+function CameraReadout({ elRef }) {
+  const last = useRef('');
+  useFrame(({ camera }) => {
+    const el = elRef.current;
+    if (!el) return;
+    const p = camera.position;
+    const s = `X ${fmtCoord(p.x)}  Y ${fmtCoord(p.y)}  Z ${fmtCoord(p.z)}`;
+    if (s !== last.current) {
+      el.textContent = s;
+      last.current = s;
+    }
+  });
+  return null;
+}
+
+function UtcClock() {
+  const ref = useRef();
+  useEffect(() => {
+    const tick = () => {
+      if (ref.current) ref.current.textContent = new Date().toISOString().slice(11, 19);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span ref={ref} />;
+}
+
+function StationContent({ station, onBack }) {
+  if (station.id === 0) return <Hero />;
+  if (station.id === 1) return <Projects />;
+  if (station.id === 2) {
+    return (
+      <Suspense fallback={null}>
+        <OpticsArchive />
+      </Suspense>
+    );
+  }
+  return <WidgetHub type={station.widget} onBack={onBack} />;
+}
 
 export default function SpatialScene() {
   const [station, setStation] = useState(0);
+  const [fx, setFx] = useState(readFxPref);
   const { isMobile, isLowEnd, reducedMotion } = useDeviceCapabilities();
   const activeRef = useRef(true);
+  const readoutRef = useRef();
 
-  // Fixed asymmetrical constellation layout with 6 stations
-  const stations = useMemo(() => [
-    new THREE.Vector3(0, 0, 0),             // 0: Core
-    new THREE.Vector3(180, 60, -120),       // 1: Deployments
-    new THREE.Vector3(-150, -40, -160),     // 2: Optics Archive
-    new THREE.Vector3(-60, -40, 40),        // 3: Sun Timer
-    new THREE.Vector3(70, 75, -40),         // 4: Weather Radar
-    new THREE.Vector3(110, -50, -160)       // 5: Monopoly Treasury
-  ], []);
-
+  const stations = useMemo(() => STATIONS.map((s) => new THREE.Vector3(...s.pos)), []);
   const isConstellation = station === CONSTELLATION;
+  const current = STATIONS[station];
 
   // Responsive monitor dimensions (CSS px), per station
   const monitorSizes = useMemo(() => {
     const widget = isMobile ? [360, 500] : [680, 460];
     return [
-      isMobile ? [380, 560] : [900, 500],   // Core
+      isMobile ? [380, 580] : [920, 520],   // Core
       isMobile ? [380, 680] : [1000, 800],  // Deployments
       isMobile ? [380, 680] : [1200, 800],  // Optics
       widget, widget, widget,
@@ -552,6 +564,10 @@ export default function SpatialScene() {
 
   const goToMap = () => setStation(CONSTELLATION);
 
+  useEffect(() => {
+    try { localStorage.setItem('sloboz-fx', fx ? 'on' : 'off'); } catch { /* private mode */ }
+  }, [fx]);
+
   // Prefetch the gallery chunk once the scene has settled, so opening Optics is instant
   useEffect(() => {
     const t = setTimeout(loadOptics, 2500);
@@ -559,46 +575,61 @@ export default function SpatialScene() {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#030204', overflow: 'hidden' }}>
+    <div className={`stage${fx ? ' fx-on' : ''}`}>
+      <div className="stage-vignette" aria-hidden="true" />
 
-      {/* Zero-cost radial vignette overlay */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        background: 'radial-gradient(circle at center, transparent 60%, rgba(3, 2, 4, 0.75) 100%)',
-        zIndex: 2
-      }} />
-
-      <nav className="hud" aria-label="Sections">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.station}
-            className="hud-btn"
-            style={{ '--c': item.color }}
-            aria-current={station === item.station}
-            onClick={() => setStation(item.station)}
-          >
-            {isMobile && item.short ? item.short : item.label}
-          </button>
-        ))}
-
-        <div className="hud-sep" aria-hidden="true" />
-
-        <button className="hud-btn hud-btn--map" aria-current={isConstellation} onClick={goToMap}>
-          <span aria-hidden="true">✦</span> {isMobile ? 'MAP' : 'CONSTELLATION'}
+      {/* ── HUD ── */}
+      <header className="hud-top">
+        <button className="brand" onClick={() => setStation(0)} aria-label="sloboz.dev, go to Core">
+          sloboz<span>.dev</span>
         </button>
-      </nav>
 
-      {isConstellation && (
-        <div className="hud-hint">
-          {isMobile ? 'drag to orbit · tap a star' : 'drag to orbit · scroll to zoom · click a star'}
+        <nav className="hud-nav" aria-label="Sections">
+          {NAV_ORDER.map((id) => {
+            const s = STATIONS[id];
+            return (
+              <button key={id} className="nav-item" aria-current={station === id} onClick={() => setStation(id)}>
+                <span className="idx">{s.idx}</span>
+                {isMobile && s.short ? s.short : s.name}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="hud-actions">
+          <button
+            className="chip-btn fx-toggle"
+            aria-pressed={fx}
+            onClick={() => setFx((v) => !v)}
+            title="Toggle the CRT / chromatic aberration effects"
+          >
+            <span className="led" aria-hidden="true" />FX
+          </button>
+          <button className="chip-btn map-btn" aria-current={isConstellation} onClick={goToMap}>
+            Map
+          </button>
         </div>
-      )}
+      </header>
+
+      <footer className="hud-bottom" aria-hidden="true">
+        <div className="hud-readout">
+          <span className="hud-label">{isConstellation ? '00' : current.idx}</span>
+          <span className="hud-value">{isConstellation ? 'System map' : current.name}</span>
+          <span className="hud-coords" ref={readoutRef} />
+        </div>
+        <div className="hud-readout hud-readout--right">
+          {isConstellation && <span className="hud-hint">{isMobile ? 'Drag to orbit · tap a node' : 'Drag to orbit · scroll to zoom · click a node'}</span>}
+          <span className="hud-label">UTC</span>
+          <span className="hud-value"><UtcClock /></span>
+        </div>
+      </footer>
+
+      <div className="frame-corners" aria-hidden="true"><i /><i /><i /><i /></div>
+      {fx && <div className="crt" aria-hidden="true" />}
 
       <Canvas
         frameloop="demand"
-        camera={{ position: [0, 2, 15], fov: CAMERA_FOV }}
+        camera={{ position: [0, 2, 15], fov: CAMERA_FOV, near: 0.5, far: 5000 }}
         dpr={isLowEnd ? [0.75, 1] : 1}
         gl={{
           powerPreference: 'high-performance',
@@ -611,11 +642,12 @@ export default function SpatialScene() {
         style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}
         onCreated={() => requestAnimationFrame(() => requestAnimationFrame(hideBoot))}
       >
-        <color attach="background" args={['#030204']} />
+        <color attach="background" args={['#050507']} />
 
         <FrameDriver activeRef={activeRef} idleFps={reducedMotion ? 15 : IDLE_FPS} />
+        <CameraReadout elRef={readoutRef} />
 
-        <DistantStarfield isLowEnd={isLowEnd} />
+        <SpaceDecor isLowEnd={isLowEnd} reducedMotion={reducedMotion} />
         <ProceduralGalaxy isLowEnd={isLowEnd} reducedMotion={reducedMotion} />
 
         {isConstellation && <ConstellationLines stations={stations} />}
@@ -629,84 +661,38 @@ export default function SpatialScene() {
           reducedMotion={reducedMotion}
         />
 
-        {/* STATION 1: CORE */}
-        <group position={stations[0]}>
-          {isConstellation && (
-            <ConstellationBeacon position={[0, 0, 0]} color="#00e5ff" label="CORE" size={5} onClick={() => setStation(0)} />
-          )}
-          {station === 0 && (
-            <Monitor position={[0, 0, 0]} rotation={[0, 0, 0]} width={monitorSizes[0][0]} height={monitorSizes[0][1]} accent="#00e5ff">
-              <Hero />
-            </Monitor>
-          )}
-        </group>
-
-        {/* STATION 2: DEPLOYMENTS */}
-        <group position={stations[1]}>
-          {isConstellation && (
-            <ConstellationBeacon position={[0, 0, 0]} color="#ff007f" label="DEPLOYMENTS" size={5} onClick={() => setStation(1)} />
-          )}
-          {station === 1 && (
-            <Monitor position={[0, 0, 0]} rotation={[0, -0.1, 0]} width={monitorSizes[1][0]} height={monitorSizes[1][1]} accent="#ff007f">
-              <Projects />
-            </Monitor>
-          )}
-        </group>
-
-        {/* STATION 3: OPTICS ARCHIVE */}
-        <group position={stations[2]}>
-          {isConstellation && (
-            <ConstellationBeacon position={[0, 0, 0]} color="#a855f7" label="OPTICS ARCHIVE" size={5} onClick={() => setStation(2)} />
-          )}
-          {station === 2 && (
-            <Monitor position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={monitorSizes[2][0]} height={monitorSizes[2][1]} accent="#a855f7">
-              <Suspense fallback={null}>
-                <OpticsArchive />
-              </Suspense>
-            </Monitor>
-          )}
-        </group>
-
-        {/* STATION 4: SUN TIMER SATELLITE */}
-        <group position={stations[3]}>
-          {isConstellation && (
-            <ConstellationBeacon position={[0, 0, 0]} color="#f59e0b" label="SUN TIMER" size={2.5} onClick={() => setStation(3)} />
-          )}
-          {station === 3 && (
-            <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0, 0.1, 0]} width={monitorSizes[3][0]} height={monitorSizes[3][1]} accent="#ffb000">
-              <WidgetHub type="sun" onBack={goToMap} />
-            </Monitor>
-          )}
-        </group>
-
-        {/* STATION 5: WEATHER RADAR SATELLITE */}
-        <group position={stations[4]}>
-          {isConstellation && (
-            <ConstellationBeacon position={[0, 0, 0]} color="#10b981" label="WEATHER" size={2.5} onClick={() => setStation(4)} />
-          )}
-          {station === 4 && (
-            <Monitor scrollable={false} position={[0, 0, 0]} rotation={[-0.1, -0.1, 0]} width={monitorSizes[4][0]} height={monitorSizes[4][1]} accent="#10b981">
-              <WidgetHub type="weather" onBack={goToMap} />
-            </Monitor>
-          )}
-        </group>
-
-        {/* STATION 6: MONOPOLY TREASURY SATELLITE */}
-        <group position={stations[5]}>
-          {isConstellation && (
-            <ConstellationBeacon position={[0, 0, 0]} color="#eab308" label="MONOPOLY" size={2.5} onClick={() => setStation(5)} />
-          )}
-          {station === 5 && (
-            <Monitor scrollable={false} position={[0, 0, 0]} rotation={[0.1, 0.1, 0]} width={monitorSizes[5][0]} height={monitorSizes[5][1]} accent="#eab308">
-              <WidgetHub type="monopoly" onBack={goToMap} />
-            </Monitor>
-          )}
-        </group>
+        {STATIONS.map((s) => (
+          <group key={s.id} position={stations[s.id]}>
+            {isConstellation && (
+              <ConstellationBeacon
+                position={[0, 0, 0]}
+                index={s.idx}
+                label={s.name}
+                size={s.size}
+                onClick={() => setStation(s.id)}
+              />
+            )}
+            {station === s.id && (
+              <Monitor
+                position={[0, 0, 0]}
+                rotation={s.rot}
+                width={monitorSizes[s.id][0]}
+                height={monitorSizes[s.id][1]}
+                scrollable={!s.widget}
+                index={s.idx}
+                label={s.name}
+                meta={s.meta}
+              >
+                <StationContent station={s} onBack={goToMap} />
+              </Monitor>
+            )}
+          </group>
+        ))}
 
         {/* Post-processing: skipped (and never downloaded) on mobile/low-end devices */}
         {!isLowEnd && (
           <Suspense fallback={null}>
-            <Effects />
+            <Effects fx={fx} />
           </Suspense>
         )}
       </Canvas>

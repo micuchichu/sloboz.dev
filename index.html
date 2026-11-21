@@ -15,38 +15,252 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Instrument+Serif&family=JetBrains+Mono:wght@400..800&display=swap" rel="stylesheet">
 
     <style>
-      /* Boot screen: paints instantly, before any JS is downloaded */
+      /* Boot loader: paints instantly, before any JS bundle is downloaded */
       html, body { background: #030204; margin: 0; }
       #boot {
-        position: fixed; inset: 0; z-index: 9999;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-        background: radial-gradient(ellipse at 50% 55%, #0b1220 0%, #030204 65%);
-        color: #fff; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-        transition: opacity .6s ease, visibility .6s;
+        position: fixed; inset: 0; z-index: 9999; overflow: hidden;
+        background: #050507; color: #ecebe8;
+        transition: opacity .7s ease, visibility .7s;
       }
       #boot.done { opacity: 0; visibility: hidden; }
-      #boot .mark { font-size: 28px; font-weight: 800; letter-spacing: -.03em; }
-      #boot .mark span { color: #00e5ff; }
-      #boot .bar { width: 140px; height: 2px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
-      #boot .bar i {
-        display: block; width: 40%; height: 100%;
-        background: linear-gradient(90deg, transparent, #00e5ff, transparent);
-        animation: boot-scan 1.1s ease-in-out infinite;
+      #boot::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+        background: repeating-linear-gradient(to bottom, rgba(0,0,0,.22) 0 1px, transparent 1px 3px); }
+      #boot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      #boot .center {
+        position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+        transition: opacity .45s ease, transform .7s cubic-bezier(.16,1,.3,1), filter .45s ease;
       }
-      @keyframes boot-scan { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-      @media (prefers-reduced-motion: reduce) { #boot .bar i { animation: none; width: 100%; opacity: .5; } }
+      #boot.finishing .center { opacity: 0; transform: translate(-50%, -50%) scale(1.08); filter: blur(6px); }
+      #boot .word {
+        margin: 0; font-family: 'Instrument Serif', 'Times New Roman', serif; font-weight: 400;
+        font-size: clamp(64px, 15vw, 168px); line-height: .82; letter-spacing: -.02em;
+        transform: scaleY(1.12); white-space: nowrap;
+        text-shadow: -0.8px 0 rgba(255, 70, 50, .45), 0.8px 0 rgba(60, 170, 255, .45);
+        opacity: 0; transition: opacity .5s ease;
+      }
+      #boot.fonts-ready .word { opacity: 1; }
+      #boot .frag {
+        position: absolute; white-space: pre;
+        font: 700 11px/1 'JetBrains Mono', ui-monospace, Consolas, monospace; letter-spacing: .06em;
+        color: rgba(255, 255, 255, .82);
+      }
+      #boot .frag.cyan { color: #ff6a3d; }
+      #boot .bar { position: absolute; left: 20px; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); }
+      #boot .track { height: 6px; border: 1px solid rgba(255, 255, 255, .85); box-sizing: border-box; }
+      #boot .fill { height: 100%; width: 0; background: #fff;  }
+      #boot .pct {
+        position: absolute; bottom: 12px; left: 28px; transform: translateX(-100%); padding-right: 2px;
+        font: 600 11px/1 'JetBrains Mono', ui-monospace, Consolas, monospace; white-space: nowrap;
+      }
+      @media (max-width: 640px) {
+        #boot .frag { font-size: 9px; }
+        #boot .frag.wide { display: none; }
+        /* keep side fragments clear of the word on narrow screens */
+        #boot .frag.side-l { margin-right: 6px !important; }
+        #boot .frag.side-r { margin-left: 6px !important; }
+      }
     </style>
 </head>
 <body>
     <div id="boot" aria-hidden="true">
-      <div class="mark">sloboz<span>.dev</span></div>
-      <div class="bar"><i></i></div>
+      <canvas id="boot-bang"></canvas>
+      <div class="center">
+        <span class="frag" style="bottom: 100%; left: 36%; margin-bottom: 10px" data-msg="SINGULARITY"></span>
+        <span class="frag side-l" style="top: 22%; right: 100%; margin-right: 6px" data-msg="T+0.000s"></span>
+        <span class="frag cyan side-l" style="top: 40%; right: 100%; margin-right: -18px" data-msg="SALUT /"></span>
+        <span class="frag side-r" style="top: 18%; left: 100%; margin-left: -4px" data-msg="INFLATION"></span>
+        <span class="frag wide" style="top: 36%; left: 100%; margin-left: 16px" data-msg="IGNITING STARS"></span>
+        <span class="frag wide" style="top: 100%; left: -2%; margin-top: 14px" data-msg="z &#8776; 1100"></span>
+        <span class="frag cyan" style="top: 100%; right: 6%; margin-top: 14px" data-msg="&lt;sloboz/&gt;"></span>
+        <h1 class="word">LOADING</h1>
+      </div>
+      <div class="bar">
+        <span class="pct">0%</span>
+        <div class="track"><div class="fill"></div></div>
+      </div>
     </div>
     <div id="root"></div>
     <noscript><p style="color:#fff;font-family:sans-serif;text-align:center;padding:2rem">This site needs JavaScript and WebGL.</p></noscript>
+    <script>
+      // Boot loader: big-bang canvas, decoding text fragments and a progress bar.
+      // Plain inline JS so it runs before the app bundle arrives. The app calls
+      // window.__bootFinish() once the 3D scene is ready.
+      (function () {
+        var boot = document.getElementById('boot');
+        var cv = document.getElementById('boot-bang');
+        var ctx = cv.getContext('2d');
+        var fill = boot.querySelector('.fill'), pct = boot.querySelector('.pct');
+        var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var MIN_SHOW = reduce ? 400 : 1900;   // long enough for the bang to play out
+        var t0 = performance.now();
+        var W, H, cx, cy, reach, dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        var i;
+
+        function resize() {
+          W = innerWidth; H = innerHeight; cx = W / 2; cy = H * 0.46;
+          reach = Math.sqrt(W * W + H * H) * 0.5;
+          cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.fillStyle = '#030204'; ctx.fillRect(0, 0, W, H);
+        }
+        resize();
+        addEventListener('resize', resize);
+
+        // Reveal the serif word once its font is in (avoids a fallback-font flash)
+        var showWord = function () { boot.classList.add('fonts-ready'); };
+        if (document.fonts && document.fonts.load) {
+          document.fonts.load('400 64px "Instrument Serif"').then(showWord, showWord);
+          setTimeout(showWord, 900);
+        } else showWord();
+
+        // ── particles: debris launched from the singularity ──
+        var COLORS = ['255,255,255', '255,255,255', '236,235,232', '210,225,255', '190,205,255', '255,226,190', '255,106,61'];
+        var N = W < 768 ? 280 : 650, parts = [];
+        for (i = 0; i < N; i++) {
+          var a = Math.random() * Math.PI * 2;
+          parts.push({
+            dx: Math.cos(a), dy: Math.sin(a) * (0.72 + Math.random() * 0.28),
+            v: 0.35 + Math.pow(Math.random(), 1.8) * 2.4,   // launch speed, in screen half-diagonals per second
+            c: COLORS[(Math.random() * COLORS.length) | 0],
+            w: 0.5 + Math.random() * 1.4,
+            ph: Math.random() * 6.28
+          });
+        }
+        var stars = [];
+        for (i = 0; i < (W < 768 ? 120 : 260); i++) {
+          stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.1 + 0.2, ph: Math.random() * 6.28, d: Math.random() * 1.5 });
+        }
+
+        var BANG = 0.55, K = 2.4;        // singularity duration (s), drag
+        var warp = 0, running = true;
+        function dist(p, tb) { return p.v * reach * (1 - Math.exp(-K * tb)) / K + tb * (14 + warp * 900); }
+
+        function glow(x, y, r, stops) {
+          var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+          for (var s = 0; s < stops.length; s++) g.addColorStop(stops[s][0], stops[s][1]);
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
+        }
+
+        function frame(now) {
+          if (!running) return;
+          var t = (now - t0) / 1000;
+          if (warp) warp = Math.min(1, warp + 0.04);
+
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.fillStyle = 'rgba(3, 2, 4, ' + (t < BANG ? 0.5 : 0.24) + ')';   // motion trails
+          ctx.fillRect(0, 0, W, H);
+          ctx.globalCompositeOperation = 'lighter';
+
+          if (t < BANG) {
+            // The singularity: a tiny point swelling and trembling
+            var k = t / BANG, r = 2 + 10 * k * k * k + Math.sin(t * 60) * k;
+            glow(cx, cy, r * 9, [[0, 'rgba(255,255,255,' + (0.35 + 0.6 * k) + ')'], [0.15, 'rgba(220,230,255,' + 0.5 * k + ')'], [1, 'rgba(220,230,255,0)']]);
+            glow(cx, cy, r, [[0, '#fff'], [1, 'rgba(255,255,255,0)']]);
+          } else {
+            var tb = t - BANG;
+            // Flash + shockwave
+            if (tb < 0.7) {
+              var f = 1 - tb / 0.7;
+              glow(cx, cy, 30 + tb * reach * 2.6, [[0, 'rgba(255,255,255,' + 0.9 * f * f + ')'], [0.3, 'rgba(200,215,255,' + 0.35 * f * f + ')'], [1, 'rgba(255,106,61,0)']]);
+            }
+            if (tb < 1.4) {
+              ctx.strokeStyle = 'rgba(236,235,232,' + 0.55 * (1 - tb / 1.4) + ')';
+              ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.ellipse(cx, cy, tb * reach * 1.5, tb * reach * 1.23, 0, 0, 6.2832); ctx.stroke();
+            }
+            // Lingering core glow
+            glow(cx, cy, 160, [[0, 'rgba(255,240,220,' + Math.max(0.05, 0.5 - tb * 0.3) + ')'], [1, 'rgba(255,106,61,0)']]);
+
+            // Background stars fade in as the universe cools
+            var sa = Math.min(1, Math.max(0, (tb - 0.3) / 1.6));
+            if (sa > 0) {
+              for (i = 0; i < stars.length; i++) {
+                var st = stars[i], tw = 0.55 + 0.45 * Math.sin(t * (1.2 + st.d) + st.ph);
+                var sx = cx + (st.x * W - cx) * (1 + warp * 0.6), sy = cy + (st.y * H - cy) * (1 + warp * 0.6);
+                ctx.fillStyle = 'rgba(255,255,255,' + sa * tw * 0.7 + ')';
+                ctx.fillRect(sx, sy, st.r * 1.6, st.r * 1.6);
+              }
+            }
+
+            // Debris streaking out and slowing into stars
+            for (i = 0; i < N; i++) {
+              var p = parts[i], d1 = dist(p, tb), d0 = dist(p, Math.max(0, tb - 0.035));
+              var x1 = cx + p.dx * d1, y1 = cy + p.dy * d1;
+              if (x1 < -50 || x1 > W + 50 || y1 < -50 || y1 > H + 50) continue;
+              var alpha = Math.min(1, 0.35 + 0.65 * Math.exp(-tb * 0.8)) * (0.6 + 0.4 * Math.sin(t * 3 + p.ph));
+              ctx.strokeStyle = 'rgba(' + p.c + ',' + alpha + ')';
+              ctx.lineWidth = p.w;
+              ctx.beginPath(); ctx.moveTo(cx + p.dx * d0, cy + p.dy * d0); ctx.lineTo(x1 + p.dx * 0.6, y1 + p.dy * 0.6); ctx.stroke();
+            }
+          }
+          requestAnimationFrame(frame);
+        }
+
+        if (reduce) {
+          // Reduced motion: one static frame
+          for (i = 0; i < stars.length; i++) { ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(stars[i].x * W, stars[i].y * H, 1.4, 1.4); }
+          glow(cx, cy, 200, [[0, 'rgba(220,230,255,.25)'], [1, 'rgba(0,0,0,0)']]);
+        } else {
+          requestAnimationFrame(frame);
+        }
+
+        // ── text fragments: scrambled binary that decodes into words ──
+        var frags = Array.prototype.slice.call(boot.querySelectorAll('.frag'));
+        frags.forEach(function (el, n) {
+          el._msg = el.getAttribute('data-msg');
+          el._start = 0.15 + n * 0.12;     // appears
+          el._solve = 0.9 + n * 0.16;      // starts resolving into text
+        });
+        var fragTimer = setInterval(function () {
+          var t = (performance.now() - t0) / 1000, all = true;
+          frags.forEach(function (el) {
+            if (t < el._start) { all = false; return; }
+            var msg = el._msg, solved = reduce ? msg.length : Math.max(0, Math.floor((t - el._solve) / 0.045)), out = '';
+            for (var c = 0; c < msg.length; c++) {
+              out += (c < solved || msg[c] === ' ') ? msg[c] : (Math.random() < 0.18 ? ' ' : (Math.random() < 0.5 ? '0' : '1'));
+            }
+            if (solved < msg.length) all = false;
+            if (el.textContent !== out) el.textContent = out;
+          });
+          if (all) clearInterval(fragTimer);
+        }, 70);
+
+        // ── progress: eases toward 90% while loading, completes when the scene is ready ──
+        var progress = 0, finishing = false;
+        function setProgress(v) {
+          progress = v;
+          var s = Math.round(v) + '%';
+          fill.style.width = v + '%';
+          pct.style.left = 'max(' + v + '%, 28px)';
+          if (pct.textContent !== s) pct.textContent = s;
+        }
+        var progTimer = setInterval(function () {
+          var t = (performance.now() - t0) / 1000;
+          var target = finishing ? 100 : 90 * (1 - Math.exp(-t / 1.4));
+          setProgress(progress + (target - progress) * (finishing ? 0.25 : 0.2));
+          if (finishing && progress > 99.5) {
+            clearInterval(progTimer);
+            setProgress(100);
+            boot.classList.add('finishing');
+            warp = 0.01;                          // stars rush outward as we leave
+            setTimeout(function () { boot.classList.add('done'); }, 380);
+            setTimeout(function () {
+              running = false; clearInterval(fragTimer);
+              removeEventListener('resize', resize);
+              boot.remove();
+            }, 1150);
+          }
+        }, 40);
+
+        window.__bootFinish = function () {
+          if (finishing) return;
+          setTimeout(function () { finishing = true; }, Math.max(0, MIN_SHOW - (performance.now() - t0)));
+        };
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 // World units per CSS pixel for drei <Html transform distanceFactor={6}>
 export const MONITOR_PX_TO_WORLD = 6 / 400;
 
-export default function Monitor({ position, rotation, children, width = 900, height = 500, scrollable = true, accent = '#00e5ff' }) {
+export default function Monitor({ position, rotation, children, width = 900, height = 500, scrollable = true, index, label, meta }) {
   const groupRef = useRef();
   const containerRef = useRef();
   const worldPos = useMemo(() => new THREE.Vector3(), []);
@@ -46,11 +46,18 @@ export default function Monitor({ position, rotation, children, width = 900, hei
         <div
           ref={containerRef}
           className={className}
-          style={{ '--accent': accent, pointerEvents: 'auto' }}
+          style={{ pointerEvents: 'auto' }}
           onWheel={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {children}
+          <div className="monitor-head">
+            <span>
+              {index && <span className="idx">{index}</span>}
+              {label}
+            </span>
+            {meta && <span className="monitor-meta">{meta}</span>}
+          </div>
+          <div className="monitor-body">{children}</div>
         </div>
       </Html>
     </group>

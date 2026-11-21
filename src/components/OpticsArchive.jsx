@@ -122,9 +122,9 @@ export default function OpticsArchive() {
   const step = useCallback((d) => setSelected((i) => (i + d + photos.length) % photos.length), []);
 
   return (
-    <section className="section-container">
+    <section className="section">
       <header className="section-head reveal">
-        <h2>Optics Archive</h2>
+        <h2 className="display">Optics Archive</h2>
         <p>/* 35mm film &amp; digital captures */</p>
       </header>
 
@@ -139,7 +139,7 @@ export default function OpticsArchive() {
               key={photo.id}
               type="button"
               onClick={() => setSelected(idx)}
-              className="border-glow-card photo-card reveal"
+              className="photo-card reveal"
               style={{
                 '--i': Math.min(idx + 1, 10),
                 aspectRatio: `${photo.thumbWidth} / ${photo.thumbHeight}`,
