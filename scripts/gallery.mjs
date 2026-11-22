@@ -1,6 +1,8 @@
 // Photo pipeline for the Optics Archive.
 //
 //   photos/            ← drop original photos here (git-ignored: originals keep GPS etc.)
+//   photos/night/, photos/day/ ← optional: forces a photo into that half of the
+//                        gallery; photos at the top level are sorted by their light level
 //   public/gallery/    ← generated web copies, metadata stripped (committed)
 //   src/data/gallery.json ← generated list + EXIF details the site reads (committed)
 //
@@ -191,10 +193,17 @@ export async function syncGallery({ log = console.log } = {}) {
     previous?.version === PIPELINE_VERSION ? (previous.photos ?? []).map((p) => [p.source?.file, p]) : []
   );
 
-  const entries = (await fs.readdir(PHOTOS_DIR, { withFileTypes: true }))
-    .filter((d) => d.isFile() && !d.name.startsWith('.') && INPUT_EXTS.has(path.extname(d.name).toLowerCase()))
-    .map((d) => d.name)
-    .sort();
+  const isPhoto = (d) => d.isFile() && !d.name.startsWith('.') && INPUT_EXTS.has(path.extname(d.name).toLowerCase());
+  const list = async (sub, light) => {
+    const dir = sub ? path.join(PHOTOS_DIR, sub) : PHOTOS_DIR;
+    if (!existsSync(dir)) return [];
+    return (await fs.readdir(dir, { withFileTypes: true }))
+      .filter(isPhoto)
+      .map((d) => ({ rel: sub ? `${sub}/${d.name}` : d.name, name: d.name, light }));
+  };
+  // Top-level photos get light: null (the site decides from the exposure)
+  const entries = [...await list('', null), ...await list('night', 'night'), ...await list('day', 'day')]
+    .sort((a, b) => a.rel.localeCompare(b.rel));
 
   await fs.mkdir(FULL_DIR, { recursive: true });
   await fs.mkdir(THUMB_DIR, { recursive: true });
@@ -204,13 +213,13 @@ export async function syncGallery({ log = console.log } = {}) {
   let added = 0;
   let failed = 0;
 
-  for (const fileName of entries) {
+  for (const { rel: fileName, name, light } of entries) {
     const file = path.join(PHOTOS_DIR, fileName);
     const stat = await fs.stat(file);
     const key = `${stat.size}-${Math.round(stat.mtimeMs)}`;
 
-    let slug = slugify(fileName);
-    for (let i = 2; usedSlugs.has(slug); i++) slug = `${slugify(fileName)}-${i}`;
+    let slug = slugify(name);
+    for (let i = 2; usedSlugs.has(slug); i++) slug = `${slugify(name)}-${i}`;
     usedSlugs.add(slug);
 
     const cached = cache.get(fileName);
@@ -219,7 +228,7 @@ export async function syncGallery({ log = console.log } = {}) {
       existsSync(path.join(OUT_DIR, cached.src.replace('./gallery/', ''))) &&
       existsSync(path.join(OUT_DIR, cached.thumb.replace('./gallery/', '')))
     ) {
-      photos.push(cached);
+      photos.push({ ...cached, light });
       continue;
     }
 
@@ -227,6 +236,7 @@ export async function syncGallery({ log = console.log } = {}) {
       const libs = await loadLibs();
       const entry = await processPhoto(file, slug, libs);
       entry.takenAt ??= toLocalISO(stat.mtime);
+      entry.light = light;
       entry.source = { file: fileName, key };
       photos.push(entry);
       added++;

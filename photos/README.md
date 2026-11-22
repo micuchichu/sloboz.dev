@@ -11,7 +11,10 @@ For each photo the script:
 2. fixes the rotation and makes a 1600px WebP for the lightbox plus a small grid thumbnail in `public/gallery/`, with **all metadata removed** (including GPS);
 3. writes everything the site needs to `src/data/gallery.json`.
 
-The gallery is sorted newest first, by the date the photo was taken.
+**Night and day.** The Optics gallery runs from night photos to day photos, darkest
+to brightest. Each photo's scene brightness is worked out from its ISO, shutter speed and
+aperture, and anything darker than about EV 10 counts as night. To decide yourself, put a
+photo in `photos/night/` or `photos/day/` instead of the top level.
 
 **Formats:** JPEG, PNG, WebP, TIFF, AVIF. iPhone HEIC files need to be exported as JPEG first.
 

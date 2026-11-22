@@ -930,161 +930,883 @@ body:has(.crt-startup) { background: #000; }
   color: var(--text-3);
 }
 
-/* ───────────── Optics gallery: masonry, native aspect ───────────── */
-.photo-grid { columns: 2; column-gap: 10px; }
-
-@container (min-width: 720px) {
-  .photo-grid { columns: 4; column-gap: 12px; }
-}
-
-.photo-card {
-  position: relative;
-  display: block;
-  width: 100%;
-  margin: 0 0 10px;
-  padding: 0;
-  overflow: hidden;
-  break-inside: avoid;
-  cursor: zoom-in;
-  background-color: var(--surface-sunk);
-  background-size: cover;
-  background-position: center;
-  outline: 1px solid var(--line);
-  outline-offset: -1px;
-}
-
-@container (min-width: 720px) {
-  .photo-card { margin-bottom: 12px; }
-}
-
-.photo-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  opacity: 0;
-  filter: saturate(0.9);
-  transition: opacity 0.5s ease, transform 0.8s var(--ease-out), filter 0.4s ease;
-}
-
-.photo-card img.is-loaded { opacity: 1; }
-.photo-card:hover img { transform: scale(1.03); filter: saturate(1.05); }
-
-/* corner ticks on hover */
-.photo-card::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease, inset 0.4s var(--ease-out);
-  background:
-    linear-gradient(#fff, #fff) top left / 10px 1px no-repeat,
-    linear-gradient(#fff, #fff) top left / 1px 10px no-repeat,
-    linear-gradient(#fff, #fff) bottom right / 10px 1px no-repeat,
-    linear-gradient(#fff, #fff) bottom right / 1px 10px no-repeat;
-}
-
-.photo-card:hover::after { opacity: 0.9; inset: 12px; }
-
-/* ───────────── Lightbox (portal on <body>) ───────────── */
+/* ───────────── Optics: pin board ─────────────
+   A dark wall bigger than the panel, dragged around under a soft light that
+   follows the cursor. Night prints are instant film with a handwritten
+   caption, day prints are glossy; each is held up by a pin or tape. */
+.optics,
 .lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4.5rem 1rem 1.5rem;
-  background: rgba(var(--bg-rgb), 0.96);
-  animation: fade-in 0.25s ease both;
+  --night-ink: #a9b6ff;
+  --night-wash: rgba(60, 76, 170, 0.16);
+  --day-ink: #ffcf96;
+  --day-wash: rgba(255, 180, 100, 0.09);
+  --paper-film: #d9d4c7;
+  --paper-gloss: #e0ddd5;
+  --tape: rgba(226, 214, 184, 0.62);
+  --pen: #283058;
 }
 
-.lightbox figure {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: min(1600px, 94vw);
-  animation: rise-in 0.4s var(--ease-out) both;
-}
-
-.lightbox img {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: calc(100dvh - 10rem);
-  object-fit: contain;
-  background-color: var(--surface-sunk);
-  background-size: cover;
-  outline: 1px solid var(--line);
-}
-
-.lightbox figcaption {
-  margin-top: 14px;
+.optics {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  max-width: min(680px, 94vw);
+  min-height: 0;
 }
 
-.lb-meta {
+/* Black and white palettes: the same board in greys */
+:root[data-palette='mono'] .optics,
+:root[data-palette='sketch'] .optics,
+:root[data-palette='mono'] .lightbox,
+:root[data-palette='sketch'] .lightbox {
+  --night-ink: #9a9a9a;
+  --night-wash: rgba(255, 255, 255, 0.03);
+  --day-ink: #ffffff;
+  --day-wash: rgba(255, 255, 255, 0.05);
+  --paper-film: #d6d6d6;
+  --paper-gloss: #e2e2e2;
+  --tape: rgba(210, 210, 210, 0.6);
+  --pen: #222;
+}
+
+:root[data-palette='sketch'] .optics,
+:root[data-palette='sketch'] .lightbox { --night-ink: #555; --day-ink: #161616; }
+
+.optics-head {
+  flex: none;
   display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
   flex-wrap: wrap;
-  justify-content: center;
-  align-items: baseline;
-  gap: 4px 18px;
+}
+
+.optics-title h2 { font-size: clamp(2.4rem, 6vw, 3.4rem); line-height: 0.9; }
+.optics-title p {
+  margin-top: 8px;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-3);
 }
 
-.lb-meta > span:first-child { color: var(--text); }
-.lb-count { color: var(--accent); }
+/* Night / Day: slides the wall over and lights up for the cluster in view */
+.optics-switch { display: flex; border: 1px solid var(--line-strong); }
 
-.exif-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  border: 1px solid var(--line);
-}
-
-.exif-chips li {
-  padding: 6px 12px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  border-right: 1px solid var(--line);
-}
-
-.exif-chips li:last-child { border-right: 0; }
-
-.lb-btn {
-  position: absolute;
+.optics-switch button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--text-2);
-  border: 1px solid var(--line-strong);
+  gap: 7px;
+  height: 32px;
+  padding: 0 14px;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--text-3);
+  transition: color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.optics-switch button + button { border-left: 1px solid var(--line-strong); }
+.optics-switch button em { font-style: normal; opacity: 0.6; }
+.optics-switch button:hover:not(:disabled) { color: var(--text); }
+.optics-switch button:disabled { opacity: 0.35; cursor: default; }
+.optics-switch button:nth-child(1)[aria-pressed='true'] { color: var(--night-ink); background: var(--night-wash); box-shadow: inset 0 -2px 0 var(--night-ink); }
+.optics-switch button:nth-child(2)[aria-pressed='true'] { color: var(--day-ink); background: var(--day-wash); box-shadow: inset 0 -2px 0 var(--day-ink); }
+
+/* ── the view onto the wall ── */
+.wall-view {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 20px -32px -32px;  /* bleed to the panel edges */
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background-color: var(--surface-sunk);
+  border-top: 1px solid var(--line);
+  outline: none;
+}
+
+.wall-view.is-dragging { cursor: grabbing; }
+.wall-view:focus-visible { box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* the light from the cursor, and the dark falling off at the edges */
+.wall-view::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle 460px at var(--lx, 50%) var(--ly, 45%), rgba(255, 244, 228, 0.07), transparent 70%);
+  box-shadow: inset 0 0 90px 10px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-palette='sketch'] .wall-view::after { background: none; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.06); }
+
+.wall {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* plaster grain, moving with the wall */
+.wall::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise);
+  background-size: 160px;
+  opacity: 0.035;
+  pointer-events: none;
+}
+
+/* each cluster gets a faint wash of its light */
+.wall-cluster {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.wall-cluster--night { background: radial-gradient(ellipse 55% 48% at 50% 52%, var(--night-wash), transparent 100%); }
+.wall-cluster--day { background: radial-gradient(ellipse 55% 48% at 50% 52%, var(--day-wash), transparent 100%); }
+
+/* a strip of masking tape with the cluster's name on it */
+.wall-label {
+  position: absolute;
+  top: 92px;
+  left: 70px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 18px 5px;
+  font-family: 'Caveat', var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--pen);
+  background: var(--tape);
+  rotate: -2.5deg;
+  clip-path: polygon(0 8%, 3% 0, 6% 10%, 9% 2%, 100% 0, 98% 30%, 100% 62%, 97% 100%, 4% 96%, 1% 100%, 2% 60%, 0 34%);
+}
+
+.wall-cluster--day .wall-label { rotate: 1.8deg; }
+.wall-label svg { opacity: 0.75; }
+.wall-label em { font-style: normal; font-size: 1.15rem; opacity: 0.6; margin-left: 4px; }
+
+/* ── a print ──
+   Two layers: the face (clipped above the bottom third) and a flap with the
+   same picture, hinged where the face stops. Bending the flap towards you on
+   hover is what makes the print look picked at rather than just tilted. */
+.print {
+  --paper: var(--paper-gloss);
+  --flap: 0.32;          /* share of the print that bends */
+  --tip: 0.15;           /* ...and the share that bends again at the very bottom */
+  position: absolute;
+  z-index: 1;
+  display: block;
+  padding: 0;
+  text-align: left;
+  cursor: zoom-in;
+  /* same function list in every state so they blend into each other */
+  transform: perspective(800px) rotate(var(--rot)) rotateX(0deg) translateY(0) scale(1);
+  transform-origin: 50% 12px;  /* swing from the pin */
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 12px 24px -8px rgba(0, 0, 0, 0.75);
+  transition: transform 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out);
+  animation: print-in 0.6s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 220ms);
+}
+
+.print--film { --paper: var(--paper-film); }
+:root[data-palette='sketch'] .print { outline: 1.5px solid #222; box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.12); }
+
+.print-face,
+.print-flap-inner {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 7px 0;
+  background: var(--paper);
+}
+
+.print--film .print-face,
+.print--film .print-flap-inner { padding: 10px 10px 0; }
+
+/* the face stops just under where the flap starts, so no seam shows */
+.print-face { clip-path: inset(0 0 calc(var(--flap) * 100% - 1px) 0); }
+
+.print-flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--flap) * 100%);
+  overflow: hidden;
+  transform-origin: 50% 0;
+  transform: perspective(520px) rotateX(0deg);
+  transition: transform 0.5s var(--ease-out);
+}
+
+/* the whole print again, pinned to the flap's bottom so the picture lines up */
+.print-flap-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(100% / var(--flap));
+}
+
+/* the tip hangs off the flap's own bottom half */
+.print-flap--tip { height: calc(var(--tip) / var(--flap) * 100%); transform: perspective(420px) rotateX(0deg); }
+.print-flap--tip > .print-flap-inner { height: calc(100% / var(--tip)); }
+.print-flap:not(.print-flap--tip) > .print-flap-inner { clip-path: inset(0 0 calc(var(--tip) * 100% - 1px) 0); }
+
+/* light catching the bend, then the edge turning away into shadow */
+.print-flap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out);
+}
+
+.print-flap--tip::after {
+  z-index: 1;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.24) 60%,
+    rgba(255, 255, 255, 0.1) 82%,
+    rgba(0, 0, 0, 0.32));
+}
+
+/* picked at: the print leans out a touch, straightens, and its bottom bends up off the wall */
+.print:hover,
+.print:focus-visible {
+  z-index: 2;
+  transform: perspective(800px) rotate(calc(var(--rot) * 0.35)) rotateX(5deg) translateY(-3px) scale(1.03);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3), 0 30px 34px -14px rgba(0, 0, 0, 0.85);
+}
+
+.print:hover .print-flap,
+.print:focus-visible .print-flap { transform: perspective(520px) rotateX(15deg); }
+
+.print:hover .print-flap--tip,
+.print:focus-visible .print-flap--tip { transform: perspective(420px) rotateX(22deg); }
+
+.print:hover .print-flap::after,
+.print:focus-visible .print-flap::after,
+.print.is-pulling .print-flap::after { opacity: 1; }
+
+/* pulled: the pin pops or the tape peels, the bend deepens and the print comes up off the wall */
+.print.is-pulling {
+  z-index: 3;
+  transform: perspective(800px) rotate(0deg) rotateX(18deg) translateY(-16px) scale(1.12);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.25), 0 50px 40px -18px rgba(0, 0, 0, 0.8);
+  transition-duration: 0.28s;
+  transition-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
+}
+
+.print.is-pulling .print-flap {
+  transform: perspective(520px) rotateX(26deg);
+  transition-duration: 0.28s;
+  transition-timing-function: cubic-bezier(0.5, 0, 0.75, 0);
+}
+
+.print.is-pulling .print-flap--tip { transform: perspective(420px) rotateX(34deg); }
+
+.print.is-pulling .pin { animation: pin-pop 0.26s ease-in forwards; }
+.print.is-pulling .tape { animation: tape-peel 0.26s ease-in forwards; }
+.print.is-off { visibility: hidden; transition: none; }
+.print.is-off .print-flap { transition: none; }
+
+/* closed: pinned back up where it was */
+.print.is-back { animation: print-back 0.7s var(--ease-out) both; }
+.print.is-back .pin,
+.print.is-back .tape { animation: fasten 0.35s 0.3s var(--ease-out) both; }
+
+@keyframes pin-pop {
+  to { opacity: 0; translate: 8px -26px; scale: 1.5; }
+}
+
+@keyframes tape-peel {
+  to { opacity: 0; translate: 0 -14px; scale: 1.1 0.6; }
+}
+
+@keyframes print-back {
+  from { opacity: 0; scale: 1.18; translate: 0 -24px; }
+  55% { opacity: 1; scale: 0.98; translate: 0 2px; }
+  to { scale: 1; translate: 0 0; }
+}
+
+@keyframes fasten {
+  from { opacity: 0; scale: 1.7; }
+  to { opacity: 1; scale: 1; }
+}
+
+.print:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.is-dragging .print { pointer-events: none; }
+
+@keyframes print-in {
+  from { opacity: 0; scale: 1.08; }
+  to { opacity: 1; scale: 1; }
+}
+
+.print-img {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background-color: #111;
+  background-size: cover;
+  background-position: center;
+}
+
+.print-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  filter: saturate(0.9) brightness(0.92);
+  transition: opacity 0.5s ease, filter 0.4s ease;
+  pointer-events: none;
+}
+
+.print-img img.is-loaded { opacity: 1; }
+.print:hover .print-img img { filter: none; }
+
+/* glossy prints catch a sheen; instant film sits slightly sunk in its frame */
+.print--gloss .print-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.16), transparent 38%, transparent 70%, rgba(255, 255, 255, 0.05));
+  pointer-events: none;
+}
+
+.print--film .print-img { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); }
+.print--film .print-img img { box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5); }
+
+/* handwriting on the film's wide bottom border */
+.print-note {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 56px;
+  padding: 0 4px;
+  font-family: 'Caveat', var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--pen);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.print-note em { font-style: normal; font-size: 1rem; opacity: 0.65; }
+
+/* a gloss print's lab stamp along the thin border */
+.print-back {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.42);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ── what holds it up ── */
+.pin {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 15px;
+  height: 15px;
+  margin-left: -7.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.75), transparent 32%), var(--pin);
+  box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.35), 3px 4px 4px rgba(0, 0, 0, 0.45);
+}
+
+.pin--accent { --pin: var(--accent); }
+.pin--red { --pin: #d9534f; }
+.pin--yellow { --pin: #e8b93a; }
+.pin--white { --pin: #d8d8d8; }
+:root[data-palette='mono'] .pin,
+:root[data-palette='sketch'] .pin { --pin: #8a8a8a; }
+
+.tape {
+  position: absolute;
+  width: 78px;
+  height: 24px;
+  background: var(--tape);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  clip-path: polygon(0 10%, 4% 0, 8% 12%, 12% 0, 100% 4%, 96% 22%, 100% 44%, 95% 64%, 100% 88%, 92% 100%, 0 94%, 4% 70%, 0 48%, 5% 28%);
+}
+
+.tape--top { top: -12px; left: 50%; margin-left: -39px; rotate: var(--tape-rot); }
+.tape--tl { width: 58px; top: -6px; left: -20px; rotate: -38deg; }
+.tape--tr { width: 58px; top: -6px; right: -20px; rotate: 41deg; }
+
+/* ── overlays on the view ── */
+.wall-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  translate: -50% 0;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: rgba(var(--bg-rgb), 0.75);
+  border: 1px solid var(--line-strong);
+  pointer-events: none;
+  transition: opacity 0.6s ease, translate 0.6s var(--ease-out);
+}
+
+.wall-hint.is-gone { opacity: 0; translate: -50% 8px; }
+
+.wall-map {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 4;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(var(--bg-rgb), 0.78);
+  border: 1px solid var(--line-strong);
+  touch-action: none;
+}
+
+.wall-map-dot {
+  position: absolute;
+  transform-origin: 50% 0;
+  opacity: 0.75;
+}
+
+.wall-map-dot--night { background: var(--night-ink); }
+.wall-map-dot--day { background: var(--day-ink); }
+
+.wall-map-view {
+  position: absolute;
+  border: 1px solid var(--accent);
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+@container (max-width: 600px) {
+  .wall-view { margin: 16px -18px -22px; }
+  .wall-map { right: 10px; bottom: 10px; scale: 0.72; transform-origin: 100% 100%; }
+  .wall-hint { bottom: 12px; left: 12px; translate: none; }
+  .wall-hint.is-gone { translate: 0 8px; }
+}
+
+/* ───────────── Lightbox (portal on <body>) ─────────────
+   The print you pulled off the wall, held up against a blurred wash of its own
+   colours. The whole screen takes its palette from the photo: a deep base from
+   its most common colour, an accent from its most vivid one. Registered so they
+   blend when you step to the next photo. */
+@property --lb-accent { syntax: '<color>'; inherits: true; initial-value: #b9c6dc; }
+@property --lb-glow { syntax: '<color>'; inherits: true; initial-value: #4a5a80; }
+@property --lb-base { syntax: '<color>'; inherits: true; initial-value: #0a0d14; }
+
+.lightbox {
+  --lb-ink: color-mix(in srgb, var(--lb-accent) 22%, #fff);          /* text */
+  --lb-dim: color-mix(in srgb, var(--lb-accent) 60%, transparent);   /* labels */
+  --lb-line: color-mix(in srgb, var(--lb-accent) 16%, transparent);
+  --lb-line-strong: color-mix(in srgb, var(--lb-accent) 36%, transparent);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  background: var(--lb-base);  /* opaque, so the site never shows through while the next backdrop fades in */
+  transition: --lb-accent 0.8s ease, --lb-glow 0.8s ease, --lb-base 0.8s ease;
+  animation: fade-in 0.3s ease both;
+}
+
+/* Black and white palettes keep the screen grey */
+:root[data-palette='mono'] .lightbox { --lb-accent: #d8d8d8 !important; --lb-glow: #4a4a4a !important; --lb-base: #050505 !important; }
+:root[data-palette='sketch'] .lightbox {
+  --lb-accent: #222 !important;
+  --lb-glow: #bbb !important;
+  --lb-base: #f4f4f4 !important;
+  --lb-ink: #161616;
+  --lb-dim: #5a5a5a;
+}
+
+/* the photo itself, blown up and blurred into a glow behind everything */
+.lb-backdrop {
+  position: fixed;
+  inset: -90px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(64px) saturate(1.5) brightness(0.36);
+  opacity: 0.9;
+  pointer-events: none;
+  animation: fade-in 0.8s ease both;
+}
+
+:root[data-palette='mono'] .lb-backdrop { filter: blur(64px) grayscale(1) brightness(0.45); }
+:root[data-palette='sketch'] .lb-backdrop { filter: blur(64px) grayscale(1) brightness(1.2); opacity: 0.45; }
+
+/* the accent's glow, a vignette into the base colour, and grain */
+.lightbox::before,
+.lightbox::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lightbox::before {
+  background:
+    radial-gradient(ellipse 70% 60% at 18% 12%, color-mix(in srgb, var(--lb-glow) 32%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 88% 92%, color-mix(in srgb, var(--lb-glow) 16%, transparent), transparent 70%),
+    radial-gradient(ellipse 85% 85% at 45% 50%, transparent 35%, color-mix(in srgb, var(--lb-base) 90%, transparent) 100%);
+}
+
+.lightbox::after { background-image: var(--noise); background-size: 160px; opacity: 0.045; }
+
+.lb-close {
+  position: fixed;
+  top: max(1.25rem, env(safe-area-inset-top));
+  right: 1.25rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 13px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lb-ink);
+  background: color-mix(in srgb, var(--lb-base) 55%, transparent);
+  border: 1px solid var(--lb-line-strong);
+  backdrop-filter: blur(10px);
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.lb-btn:hover { color: var(--text); border-color: var(--text); }
-.lb-close { top: max(1.25rem, env(safe-area-inset-top)); right: 1.25rem; height: 32px; padding: 0 12px; }
-.lb-nav { top: 50%; width: 44px; height: 44px; transform: translateY(-50%); }
-.lb-prev { left: 1.25rem; }
-.lb-next { right: 1.25rem; }
+.lb-close:hover { color: var(--lb-accent); border-color: var(--lb-accent); }
 
-@media (max-width: 768px) {
-  .lb-nav { top: auto; bottom: 1.25rem; transform: none; }
+.lb-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  padding: 64px 72px;
+}
+
+/* ── the print in your hand ── */
+.lb-print {
+  flex: none;
+  margin: 0;
+  padding: 10px 10px 0;
+  background: var(--paper-gloss);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), 0 50px 90px -24px rgba(0, 0, 0, 0.9);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.lb-print--film { padding: 14px 14px 0; background: var(--paper-film); }
+:root[data-palette='sketch'] .lb-print { outline: 1.5px solid #222; }
+
+.lb-print.is-swap { animation: lb-swap 0.45s var(--ease-out) both; }
+
+@keyframes lb-swap {
+  from { opacity: 0; translate: 0 16px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+/* the photo window: zooms and pans inside the paper border */
+.lb-photo {
+  position: relative;
+  overflow: hidden;
+  background-color: #111;
+  background-size: cover;
+  cursor: zoom-in;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.lb-print--film .lb-photo { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3); }
+.lb-photo.is-zoomed { cursor: grab; }
+.lb-photo.is-panning { cursor: grabbing; }
+
+.lb-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.lb-zoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #eee;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: default;
+}
+
+.lb-photo:hover .lb-zoom,
+.lb-photo.is-zoomed .lb-zoom,
+.lb-zoom:focus-within { opacity: 1; }
+
+@media (hover: none) { .lb-zoom { opacity: 1; } }
+
+.lb-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
+  color: inherit;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.lb-zoom button:hover:not(:disabled) { color: var(--lb-accent); }
+.lb-zoom button:disabled { opacity: 0.35; cursor: default; }
+.lb-zoom-level { min-width: 46px; border-left: 1px solid rgba(255, 255, 255, 0.12) !important; border-right: 1px solid rgba(255, 255, 255, 0.12) !important; }
+.hint-touch { display: none; }
+
+@media (pointer: coarse) {
+  .hint-fine { display: none; }
+  .hint-touch { display: inline; }
+}
+
+.lb-note {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 78px;
+  padding: 0 6px;
+  font-family: 'Caveat', var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--pen);
+}
+
+.lb-note em { font-style: normal; font-size: 1.3rem; opacity: 0.65; }
+
+.lb-stamp {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* ── the card beside it ── */
+.lb-card {
+  flex: none;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 24px 20px;
+  background: color-mix(in srgb, var(--lb-base) 62%, transparent);
+  border: 1px solid var(--lb-line-strong);
+  box-shadow: 0 40px 90px -40px color-mix(in srgb, var(--lb-glow) 55%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  animation: lb-card-in 0.55s 0.2s var(--ease-out) both;
+}
+
+@keyframes lb-card-in {
+  from { opacity: 0; translate: 18px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes lb-fade {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.lb-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lb-count { color: var(--lb-accent); }
+.lb-count i { font-style: normal; opacity: 0.45; }
+.lb-light { display: inline-flex; color: var(--lb-dim); }
+
+.lb-info { animation: lb-fade 0.4s ease both; }
+
+.lb-day {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 400;
+  line-height: 0.95;
+  color: var(--lb-ink);
+}
+
+.lb-sub {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  line-height: 1.6;
+  text-transform: uppercase;
+  color: var(--lb-dim);
+}
+
+/* the photo's main colours, darkest to lightest */
+.lb-swatches {
+  display: flex;
+  height: 24px;
+  border: 1px solid var(--lb-line);
+}
+
+.lb-swatches span { flex: 1; transition: background-color 0.6s ease; }
+
+.lb-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 18px;
+  border-top: 1px solid var(--lb-line);
+  animation: lb-fade 0.4s 0.05s ease both;
+}
+
+.lb-specs div { padding: 11px 0; border-bottom: 1px solid var(--lb-line); min-width: 0; }
+
+.lb-specs dt {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lb-dim);
+}
+
+.lb-specs dd {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--lb-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* every photo, small, to jump straight to one */
+.lb-strip {
+  display: flex;
+  gap: 6px;
+  padding: 3px;
+  margin: 0 -3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lb-strip::-webkit-scrollbar { display: none; }
+
+.lb-strip button {
+  flex: none;
+  width: 32px;
+  height: 46px;
+  opacity: 0.4;
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  transition: opacity 0.25s ease, outline-color 0.25s ease;
+}
+
+.lb-strip button:hover { opacity: 0.85; }
+.lb-strip button.is-current { opacity: 1; outline-color: var(--lb-accent); }
+.lb-strip img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.lb-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.lb-steps button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lb-ink);
+  border: 1px solid var(--lb-line-strong);
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.lb-steps button:hover {
+  color: var(--lb-accent);
+  border-color: var(--lb-accent);
+  background: color-mix(in srgb, var(--lb-accent) 8%, transparent);
+}
+
+.lb-keys {
+  margin-top: -8px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lb-dim);
+}
+
+/* phones and narrow windows: print on top, card underneath */
+@media (max-width: 899px) {
+  .lb-stage {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 24px;
+    padding: 68px 20px 28px;
+  }
+  .lb-card { width: 100%; max-width: 460px; animation-name: lb-card-up; }
+  .lb-day { font-size: 2rem; }
+  .lb-keys { display: none; }
+}
+
+@keyframes lb-card-up {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
 }
 
 /* ───────────── Widgets ───────────── */

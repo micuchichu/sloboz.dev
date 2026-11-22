@@ -592,6 +592,49 @@ function StationContent({ station, onBack }) {
 const CRT_OFF_MS = 1250; // keep in step with the crt-collapse animation in index.css
 const CRT_ON_MS = 1300;  // and crt-warmup
 
+// CRT sounds: static crackle for the warm-up, the classic tube "thunk" and
+// whine for the power-off. They play from the click (so browsers allow them)
+// and follow the site volume set in the Acoustics player. The warm-up clip
+// is four seconds long, so it fades out as the picture settles.
+const CRT_SOUNDS = { on: './sounds/crt-on.mp3', off: './sounds/crt-off.wav' };
+const crtAudio = {};
+let crtFade = 0;
+const getCrtSound = (name) => {
+  if (!crtAudio[name]) {
+    crtAudio[name] = new Audio(CRT_SOUNDS[name]);
+    crtAudio[name].preload = 'auto';
+  }
+  return crtAudio[name];
+};
+const preloadCrtSounds = () => Object.keys(CRT_SOUNDS).forEach(getCrtSound);
+function stopCrtSounds() {
+  clearInterval(crtFade);
+  Object.values(crtAudio).forEach((a) => a.pause());
+}
+// fade = [startMs, endMs] to fade out over, or null to play the whole clip
+function playCrtSound(name, fade = null) {
+  let vol = 0.8;
+  try {
+    const v = parseFloat(localStorage.getItem('sloboz-volume'));
+    if (Number.isFinite(v)) vol = v;
+  } catch { /* private mode */ }
+  const peak = 0.6 * vol * vol; // same perceptual curve as the piano
+  stopCrtSounds();
+  if (peak <= 0) return;
+  const a = getCrtSound(name);
+  a.currentTime = 0;
+  a.volume = peak;
+  a.play().catch(() => { /* blocked or not loaded: stay silent */ });
+  if (!fade) return;
+  const [from, to] = fade;
+  const t0 = performance.now();
+  crtFade = setInterval(() => {
+    const t = performance.now() - t0;
+    if (t >= to) { stopCrtSounds(); return; }
+    a.volume = t < from ? peak : peak * (1 - (t - from) / (to - from));
+  }, 30);
+}
+
 export default function SpatialScene() {
   const palette = usePalette();
   const [station, setStation] = useState(0);
@@ -630,15 +673,18 @@ export default function SpatialScene() {
     crtTimers.current = [];
     setShutdown(0);
     setStartup(false);
+    stopCrtSounds();
     if (!reducedMotion) {
       if (fx) {
         setShutdown(1);
+        playCrtSound('off');
         crtTimers.current = [
           setTimeout(() => setShutdown(2), CRT_OFF_MS * 0.45),
           setTimeout(() => setShutdown(0), CRT_OFF_MS),
         ];
       } else {
         setStartup(true);
+        playCrtSound('on', [CRT_ON_MS * 0.7, CRT_ON_MS + 450]);
         crtTimers.current = [setTimeout(() => setStartup(false), CRT_ON_MS)];
       }
     }
@@ -653,7 +699,7 @@ export default function SpatialScene() {
 
   // Prefetch the gallery chunk once the scene has settled, so opening Optics is instant
   useEffect(() => {
-    const t = setTimeout(() => { loadOptics(); loadAcoustics(); }, 2500);
+    const t = setTimeout(() => { loadOptics(); loadAcoustics(); preloadCrtSounds(); }, 2500);
     return () => clearTimeout(t);
   }, []);
 
@@ -788,7 +834,7 @@ export default function SpatialScene() {
                 rotation={s.rot}
                 width={monitorSizes[s.id][0]}
                 height={monitorSizes[s.id][1]}
-                scrollable={!s.widget}
+                scrollable={!s.widget && s.id !== 2} // Optics pans its own wall
                 index={s.idx}
                 label={s.name}
                 meta={s.meta}

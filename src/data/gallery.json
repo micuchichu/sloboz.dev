@@ -24,7 +24,8 @@
       "source": {
         "file": "atmosphere.jpg",
         "key": "2514542-1795268785342"
-      }
+      },
+      "light": null
     },
     {
       "id": "brutalist-blocks",
@@ -49,7 +50,8 @@
       "source": {
         "file": "brutalist-blocks.jpg",
         "key": "803186-1795268785236"
-      }
+      },
+      "light": null
     },
     {
       "id": "skyline",
@@ -74,7 +76,8 @@
       "source": {
         "file": "skyline.jpg",
         "key": "1466049-1795268785134"
-      }
+      },
+      "light": null
     },
     {
       "id": "perimeter",
@@ -99,7 +102,8 @@
       "source": {
         "file": "perimeter.jpg",
         "key": "3029417-1795268785028"
-      }
+      },
+      "light": null
     },
     {
       "id": "industrial-node",
@@ -124,7 +128,8 @@
       "source": {
         "file": "industrial-node.jpg",
         "key": "3423724-1795268784921"
-      }
+      },
+      "light": null
     },
     {
       "id": "night-walk",
@@ -149,7 +154,8 @@
       "source": {
         "file": "night-walk.jpg",
         "key": "1652464-1795268784819"
-      }
+      },
+      "light": null
     },
     {
       "id": "bucharest-sector",
@@ -174,7 +180,8 @@
       "source": {
         "file": "bucharest-sector.jpg",
         "key": "1300924-1795268784632"
-      }
+      },
+      "light": null
     },
     {
       "id": "urban-transit",
@@ -199,7 +206,8 @@
       "source": {
         "file": "urban-transit.jpg",
         "key": "3005122-1795268784731"
-      }
+      },
+      "light": null
     }
   ]
 }
