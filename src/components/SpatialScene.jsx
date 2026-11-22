@@ -1,5 +1,5 @@
 import React, { useRef, useState, useMemo, useEffect, lazy, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, events as defaultEvents } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import Monitor, { MONITOR_PX_TO_WORLD } from './Monitor';
@@ -8,11 +8,17 @@ import WidgetHub from './WidgetHub';
 import Projects from './Projects';
 import SpaceDecor from './SpaceDecor';
 import { hideBoot } from '../boot';
+import { usePalette, cyclePalette } from '../lib/palettes';
 
 const Effects = lazy(() => import('./Effects'));
 // The gallery (and its photo list, which grows over time) stays out of the first bundle
 const loadOptics = () => import('./OpticsArchive');
 const OpticsArchive = lazy(loadOptics);
+// Acoustics: a full 3D scene (piano + records) and a tiny auto-hiding overlay
+const loadAcoustics = () => import('./AcousticsWorld');
+const AcousticsWorld = lazy(loadAcoustics);
+const AcousticsOverlay = lazy(() => import('./AcousticsOverlay'));
+const IMMERSIVE = 6; // station id with no panel and no HUD
 
 const CAMERA_FOV = 60;
 const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV) / 2);
@@ -21,7 +27,7 @@ const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV) / 2);
 const CAMERA_DAMPING = 3.7;
 // Frame rate used while nothing is moving except the slow galaxy drift
 const IDLE_FPS = 30;
-const CONSTELLATION = 6;
+const CONSTELLATION = -1; // sentinel: the system map (not a station index)
 
 function readCapabilities() {
   if (typeof window === 'undefined') return { isMobile: false, isLowEnd: false, reducedMotion: false };
@@ -99,7 +105,8 @@ function FrameDriver({ activeRef, idleFps }) {
   return null;
 }
 
-function CameraController({ station, stations, isMobile, monitorSize, activeRef, reducedMotion }) {
+function CameraController({ station, stations, isMobile, monitorSize, activeRef, reducedMotion, immersive }) {
+  const lookVec = useMemo(() => new THREE.Vector3(), []);
   const controlsRef = useRef();
   const isTransitioningRef = useRef(false);
   const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
@@ -130,24 +137,35 @@ function CameraController({ station, stations, isMobile, monitorSize, activeRef,
     const t = reducedMotion ? 1 : 1 - Math.exp(-CAMERA_DAMPING * delta);
     const camera = state.camera;
 
-    if (isConstellation) {
+    // Orbit modes: the system map, and the immersive Acoustics station (around the piano)
+    if (isConstellation || immersive) {
+      let home = constellationDefaultPos;
+      let center = constellationCenter;
+      if (immersive) {
+        const st = stations[station] || stations[0];
+        const aspect = size.width / size.height;
+        const d = Math.max(22, 21 / (2 * TAN_HALF_FOV * aspect));
+        home = desiredPosVec.set(st.x, st.y + 1.5, st.z + d);
+        center = lookVec.set(st.x, st.y - 1.2, st.z - 6); // the piano
+      }
+
       if (isTransitioningRef.current) {
-        const distPos = camera.position.distanceTo(constellationDefaultPos);
-        const distLook = lookAtTarget.current.distanceTo(constellationCenter);
+        const distPos = camera.position.distanceTo(home);
+        const distLook = lookAtTarget.current.distanceTo(center);
 
         if (distPos > 0.5 || distLook > 0.5) {
-          camera.position.lerp(constellationDefaultPos, t);
-          lookAtTarget.current.lerp(constellationCenter, t);
+          camera.position.lerp(home, t);
+          lookAtTarget.current.lerp(center, t);
           camera.lookAt(lookAtTarget.current);
           activeRef.current = true;
         } else {
-          camera.position.copy(constellationDefaultPos);
-          lookAtTarget.current.copy(constellationCenter);
+          camera.position.copy(home);
+          lookAtTarget.current.copy(center);
           camera.lookAt(lookAtTarget.current);
           isTransitioningRef.current = false;
           activeRef.current = false;
           if (controlsRef.current) {
-            controlsRef.current.target.copy(constellationCenter);
+            controlsRef.current.target.copy(center);
             controlsRef.current.enabled = true;
             controlsRef.current.update();
           }
@@ -159,8 +177,10 @@ function CameraController({ station, stations, isMobile, monitorSize, activeRef,
       return;
     }
 
-    const target = stations[station] || stations[0];
-    desiredPosVec.set(target.x, target.y, target.z + distance);
+    const station3 = stations[station] || stations[0];
+    desiredPosVec.set(station3.x, station3.y, station3.z + distance);
+    lookVec.copy(station3);
+    const target = lookVec;
 
     const distPos = camera.position.distanceTo(desiredPosVec);
     const distLook = lookAtTarget.current.distanceTo(target);
@@ -180,12 +200,15 @@ function CameraController({ station, stations, isMobile, monitorSize, activeRef,
   return (
     <OrbitControls
       ref={controlsRef}
+      makeDefault
       enabled={false}
       enableDamping
       dampingFactor={0.05}
-      rotateSpeed={0.8}
-      minDistance={40}
-      maxDistance={isMobile ? 650 : 500}
+      enablePan={!immersive}
+      rotateSpeed={immersive ? 0.55 : 0.8}
+      minDistance={immersive ? 16 : 40}
+      maxDistance={immersive ? 46 : isMobile ? 650 : 500}
+      maxPolarAngle={immersive ? 1.62 : Math.PI}
       target={[10, 10, -80]}
     />
   );
@@ -206,6 +229,8 @@ function ConstellationLines({ stations }) {
       stations[4], stations[1], // Weather -> Deployments
       stations[1], stations[5], // Deployments -> Monopoly
       stations[5], stations[2], // Monopoly -> Optics
+      stations[0], stations[6], // Core -> Acoustics
+      stations[6], stations[2], // Acoustics -> Optics
     ];
     return new THREE.BufferGeometry().setFromPoints(points);
   }, [stations]);
@@ -219,10 +244,9 @@ function ConstellationLines({ stations }) {
   );
 }
 
-const BEACON_COLOR = '#e9e7e2';
-const ACCENT = '#ff6a3d';
 
 function ConstellationBeacon({ position, onClick, label, index, size = 5 }) {
+  const palette = usePalette();
   const meshRef = useRef();
   const wireRef = useRef();
   const groupRef = useRef();
@@ -285,13 +309,13 @@ function ConstellationBeacon({ position, onClick, label, index, size = 5 }) {
       {/* Solid rotating core */}
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[size, 0]} />
-        <meshBasicMaterial color={hovered ? ACCENT : BEACON_COLOR} />
+        <meshBasicMaterial color={hovered ? palette.accent : palette.beacon} />
       </mesh>
 
       {/* Glowing outer wireframe */}
       <mesh ref={wireRef}>
         <icosahedronGeometry args={[size * 1.15, 0]} />
-        <meshBasicMaterial color={hovered ? ACCENT : BEACON_COLOR} transparent opacity={hovered ? 0.7 : 0.25} wireframe />
+        <meshBasicMaterial color={hovered ? palette.accent : palette.beacon} transparent opacity={hovered ? 0.7 : 0.25} wireframe />
       </mesh>
 
       {label && (
@@ -486,11 +510,36 @@ const STATIONS = [
   { id: 0, idx: '02', name: 'Core', meta: 'Profile', pos: [0, 0, 0], rot: [0, 0, 0], size: 5 },
   { id: 1, idx: '03', name: 'Deployments', short: 'Work', meta: 'Selected work', pos: [180, 60, -120], rot: [0, -0.1, 0], size: 5 },
   { id: 2, idx: '01', name: 'Optics', meta: 'Photography', pos: [-150, -40, -160], rot: [0, 0.1, 0], size: 5 },
-  { id: 3, idx: '04', name: 'Sun', meta: 'Sol · G2V', pos: [-60, -40, 40], rot: [0, 0.1, 0], size: 2.5, widget: 'sun' },
-  { id: 4, idx: '05', name: 'Weather', meta: 'In development', pos: [70, 75, -40], rot: [-0.1, -0.1, 0], size: 2.5, widget: 'weather' },
-  { id: 5, idx: '06', name: 'Monopoly', meta: 'In development', pos: [110, -50, -160], rot: [0.1, 0.1, 0], size: 2.5, widget: 'monopoly' },
+  { id: 3, idx: '05', name: 'Sun', meta: 'Sol · G2V', pos: [-60, -40, 40], rot: [0, 0.1, 0], size: 2.5, widget: 'sun' },
+  { id: 4, idx: '06', name: 'Weather', meta: 'In development', pos: [70, 75, -40], rot: [-0.1, -0.1, 0], size: 2.5, widget: 'weather' },
+  { id: 5, idx: '07', name: 'Monopoly', meta: 'In development', pos: [110, -50, -160], rot: [0.1, 0.1, 0], size: 2.5, widget: 'monopoly' },
+  { id: 6, idx: '04', name: 'Acoustics', short: 'Sound', meta: 'MIDI recordings', pos: [-120, 80, -60], rot: [0, 0.08, 0], size: 4 },
 ];
-const NAV_ORDER = [2, 0, 1];
+const NAV_ORDER = [2, 0, 1, 6];
+
+// drei's <Html transform> panels live inside an overflow:hidden wrapper. When a
+// control inside a panel takes focus, the browser "scrolls it into view" by
+// scrolling that wrapper, which shoves the whole 3D layer off screen. Pin it.
+function lockScroll(canvas) {
+  [canvas.parentElement, canvas.parentElement?.parentElement].forEach((el) => {
+    if (!el) return;
+    el.addEventListener('scroll', () => {
+      if (el.scrollTop || el.scrollLeft) el.scrollTo(0, 0);
+    });
+  });
+}
+
+// R3F derives the pointer from event.offsetX/Y, which is wrong whenever the page
+// is scaled (browser zoom/emulation, CSS transforms). Use client coordinates
+// against the canvas rect instead so clicks always land where they look.
+const clientCoordEvents = (store) => ({
+  ...defaultEvents(store),
+  compute(event, state) {
+    const r = state.gl.domElement.getBoundingClientRect();
+    state.pointer.set(((event.clientX - r.left) / r.width) * 2 - 1, -((event.clientY - r.top) / r.height) * 2 + 1);
+    state.raycaster.setFromCamera(state.pointer, state.camera);
+  },
+});
 
 function readFxPref() {
   try { return localStorage.getItem('sloboz-fx') !== 'off'; } catch { return true; }
@@ -540,7 +589,11 @@ function StationContent({ station, onBack }) {
   return <WidgetHub type={station.widget} onBack={onBack} />;
 }
 
+const CRT_OFF_MS = 1250; // keep in step with the crt-collapse animation in index.css
+const CRT_ON_MS = 1300;  // and crt-warmup
+
 export default function SpatialScene() {
+  const palette = usePalette();
   const [station, setStation] = useState(0);
   const [fx, setFx] = useState(readFxPref);
   const { isMobile, isLowEnd, reducedMotion } = useDeviceCapabilities();
@@ -564,19 +617,52 @@ export default function SpatialScene() {
 
   const goToMap = () => setStation(CONSTELLATION);
 
+  // Turning FX off plays an old-CRT power-off: the picture (effects still on)
+  // collapses to a bright line, then a dot, goes dark, and the clean view fades
+  // back in. 1 = collapsing, 2 = coming back without effects.
+  // Turning it on plays a struggling warm-up: the tube flickers on and off
+  // through heavy static for about a second, then settles.
+  const [shutdown, setShutdown] = useState(0);
+  const [startup, setStartup] = useState(false);
+  const crtTimers = useRef([]);
+  const toggleFx = () => {
+    crtTimers.current.forEach(clearTimeout);
+    crtTimers.current = [];
+    setShutdown(0);
+    setStartup(false);
+    if (!reducedMotion) {
+      if (fx) {
+        setShutdown(1);
+        crtTimers.current = [
+          setTimeout(() => setShutdown(2), CRT_OFF_MS * 0.45),
+          setTimeout(() => setShutdown(0), CRT_OFF_MS),
+        ];
+      } else {
+        setStartup(true);
+        crtTimers.current = [setTimeout(() => setStartup(false), CRT_ON_MS)];
+      }
+    }
+    setFx((v) => !v);
+  };
+  useEffect(() => () => crtTimers.current.forEach(clearTimeout), []);
+  const showFx = fx || shutdown === 1;
+
   useEffect(() => {
     try { localStorage.setItem('sloboz-fx', fx ? 'on' : 'off'); } catch { /* private mode */ }
   }, [fx]);
 
   // Prefetch the gallery chunk once the scene has settled, so opening Optics is instant
   useEffect(() => {
-    const t = setTimeout(loadOptics, 2500);
+    const t = setTimeout(() => { loadOptics(); loadAcoustics(); }, 2500);
     return () => clearTimeout(t);
   }, []);
 
   return (
-    <div className={`stage${fx ? ' fx-on' : ''}`}>
+    <>
+    <div className={`stage${showFx ? ' fx-on' : ''}${station === IMMERSIVE ? ' is-immersive' : ''}${shutdown ? ' crt-shutdown' : ''}${startup ? ' crt-startup' : ''}`}>
       <div className="stage-vignette" aria-hidden="true" />
+      {/* Deep stage vignette for the immersive Acoustics station */}
+      <div className="stage-spot" aria-hidden="true" />
 
       {/* ── HUD ── */}
       <header className="hud-top">
@@ -600,10 +686,19 @@ export default function SpatialScene() {
           <button
             className="chip-btn fx-toggle"
             aria-pressed={fx}
-            onClick={() => setFx((v) => !v)}
+            onClick={toggleFx}
             title="Toggle the CRT / chromatic aberration effects"
           >
             <span className="led" aria-hidden="true" />FX
+          </button>
+          <button
+            className="chip-btn palette-btn"
+            onClick={(e) => cyclePalette(e.shiftKey ? -1 : 1)}
+            title="Next colour palette (Shift-click for the previous one)"
+            aria-label={`Colour palette: ${palette.name}. Click for the next one`}
+          >
+            <span className="swatch" aria-hidden="true" />
+            <span className="palette-name">{palette.name}</span>
           </button>
           <button className="chip-btn map-btn" aria-current={isConstellation} onClick={goToMap}>
             Map
@@ -625,10 +720,16 @@ export default function SpatialScene() {
       </footer>
 
       <div className="frame-corners" aria-hidden="true"><i /><i /><i /><i /></div>
-      {fx && <div className="crt" aria-hidden="true" />}
+      {showFx && <div className="crt" aria-hidden="true" />}
+      {station === IMMERSIVE && (
+        <Suspense fallback={null}>
+          <AcousticsOverlay onExit={goToMap} />
+        </Suspense>
+      )}
 
       <Canvas
         frameloop="demand"
+        events={clientCoordEvents}
         camera={{ position: [0, 2, 15], fov: CAMERA_FOV, near: 0.5, far: 5000 }}
         dpr={isLowEnd ? [0.75, 1] : 1}
         gl={{
@@ -639,12 +740,15 @@ export default function SpatialScene() {
           alpha: false,
           precision: isLowEnd ? 'mediump' : 'highp'
         }}
-        style={{ pointerEvents: isConstellation ? 'auto' : 'none' }}
-        onCreated={() => requestAnimationFrame(() => requestAnimationFrame(hideBoot))}
+        style={{ pointerEvents: isConstellation || station === IMMERSIVE ? 'auto' : 'none' }}
+        onCreated={({ gl }) => {
+          lockScroll(gl.domElement);
+          requestAnimationFrame(() => requestAnimationFrame(hideBoot));
+        }}
       >
-        <color attach="background" args={['#050507']} />
+        <color attach="background" args={[palette.background]} />
 
-        <FrameDriver activeRef={activeRef} idleFps={reducedMotion ? 15 : IDLE_FPS} />
+        <FrameDriver activeRef={activeRef} idleFps={station === IMMERSIVE ? 120 : reducedMotion ? 15 : IDLE_FPS} />
         <CameraReadout elRef={readoutRef} />
 
         <SpaceDecor isLowEnd={isLowEnd} reducedMotion={reducedMotion} />
@@ -656,23 +760,29 @@ export default function SpatialScene() {
           station={station}
           stations={stations}
           isMobile={isMobile}
-          monitorSize={isConstellation ? null : monitorSizes[station]}
+          monitorSize={isConstellation || station === IMMERSIVE ? null : monitorSizes[station]}
           activeRef={activeRef}
           reducedMotion={reducedMotion}
+          immersive={station === IMMERSIVE}
         />
 
         {STATIONS.map((s) => (
           <group key={s.id} position={stations[s.id]}>
             {isConstellation && (
               <ConstellationBeacon
-                position={[0, 0, 0]}
+                position={s.id === IMMERSIVE ? [0, 9.5, 0] : [0, 0, 0]}
                 index={s.idx}
                 label={s.name}
                 size={s.size}
                 onClick={() => setStation(s.id)}
               />
             )}
-            {station === s.id && (
+            {s.id === IMMERSIVE && (
+              <Suspense fallback={null}>
+                <AcousticsWorld active={station === IMMERSIVE} />
+              </Suspense>
+            )}
+            {station === s.id && s.id !== IMMERSIVE && (
               <Monitor
                 position={[0, 0, 0]}
                 rotation={s.rot}
@@ -692,10 +802,13 @@ export default function SpatialScene() {
         {/* Post-processing: skipped (and never downloaded) on mobile/low-end devices */}
         {!isLowEnd && (
           <Suspense fallback={null}>
-            <Effects fx={fx} />
+            <Effects fx={showFx} />
           </Suspense>
         )}
       </Canvas>
     </div>
+    {shutdown > 0 && <div className="crt-flash" aria-hidden="true" />}
+    {startup && <div className="crt-static" aria-hidden="true" />}
+    </>
   );
 }

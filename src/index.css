@@ -1,18 +1,29 @@
 /* src/index.css — sloboz.dev
-   Restrained "mission control" design: near-black, off-white type, hairline
-   frames, one warm signal accent. Serif display + mono labels + Inter body. */
+   Restrained "mission control" design: blue-black deep space, cool white type,
+   hairline frames, one OIII-teal signal accent (the glow of ionised oxygen in
+   nebulae). Serif display + mono labels + Inter body. */
 
 :root {
-  --bg: #050507;
-  --panel: rgba(8, 9, 12, 0.95);
-  --panel-raise: rgba(255, 255, 255, 0.025);
-  --line: rgba(255, 255, 255, 0.09);
-  --line-strong: rgba(255, 255, 255, 0.2);
-  --tick: rgba(255, 255, 255, 0.55);
-  --text: #ecebe8;
-  --text-2: #a3a29e;
-  --text-3: #7d7c78;
-  --accent: #ff6a3d;        /* signal orange, used sparingly */
+  /* film-grain tile, shared by the CRT layer and the power-on static */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+:root {
+  --bg: #05070c;
+  --bg-rgb: 5, 7, 12;
+  --panel: rgba(7, 10, 17, 0.95);
+  --panel-raise: rgba(150, 200, 255, 0.03);
+  --surface: #090c13;
+  --surface-hover: #0e131c;
+  --surface-sunk: #0a0d14;
+  --line: rgba(160, 200, 255, 0.1);
+  --line-strong: rgba(170, 210, 255, 0.24);
+  --tick: rgba(200, 225, 255, 0.55);
+  --text: #e5edf3;
+  --text-rgb: 229, 237, 243;
+  --text-2: #93a1b0;
+  --text-3: #6b7787;
+  --accent: #6ee7cf;        /* OIII teal, used sparingly */
   --font-display: 'Instrument Serif', 'Times New Roman', serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
@@ -99,7 +110,7 @@ ul { list-style: none; }
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(5, 5, 7, 0.8) 100%);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(var(--bg-rgb), 0.8) 100%);
 }
 
 .hud-top,
@@ -188,14 +199,14 @@ ul { list-style: none; }
   text-transform: uppercase;
   color: var(--text-2);
   border: 1px solid var(--line-strong);
-  background: rgba(5, 5, 7, 0.5);
+  background: rgba(var(--bg-rgb), 0.5);
   transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.chip-btn:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.4); }
+.chip-btn:hover { color: var(--text); border-color: rgba(var(--text-rgb), 0.4); }
 
 .chip-btn[aria-current='true'] {
-  color: #050507;
+  color: var(--bg);
   background: var(--text);
   border-color: var(--text);
 }
@@ -206,6 +217,14 @@ ul { list-style: none; }
   border-radius: 50%;
   background: var(--text-3);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--line-strong), 0 0 6px var(--accent);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .fx-toggle[aria-pressed='true'] .led {
@@ -265,6 +284,7 @@ ul { list-style: none; }
   .brand { display: none; }
   .hud-actions { gap: 6px; }
   .chip-btn { padding: 0 9px; }
+  .palette-name { display: none; }
   .hud-nav { justify-self: start; gap: 16px; }
   .nav-item { font-size: 0.7rem; letter-spacing: 0.08em; }
   .nav-item .idx { display: none; }
@@ -277,7 +297,7 @@ ul { list-style: none; }
   font-size: 10.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(236, 235, 232, 0.72);
+  color: rgba(var(--text-rgb), 0.72);
   white-space: nowrap;
   transition: color 0.2s ease;
 }
@@ -301,7 +321,7 @@ ul { list-style: none; }
   position: absolute;
   inset: -10%;
   opacity: 0.075;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: var(--noise);
   animation: grain 0.9s steps(5) infinite;
 }
 
@@ -330,12 +350,352 @@ ul { list-style: none; }
   to { transform: translateY(144vh); }
 }
 
+/* ── CRT power-off, played when FX is switched off ──
+   The whole picture squashes into a white-hot horizontal line, the line
+   shrinks to a dot, the dot fades, and after a beat of black the clean view
+   fades back in. 1.25 s, in step with CRT_OFF_MS in SpatialScene.jsx. */
+body:has(.crt-shutdown) { background: #000; }
+
+.stage.crt-shutdown {
+  animation: crt-collapse 1.25s linear both;
+  transform-origin: 50% 50%;
+}
+
+@keyframes crt-collapse {
+  0%   { transform: none; filter: none; opacity: 1; animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.6); }
+  12%  { transform: scale(1.04, 0.004); filter: brightness(5) saturate(0.3); opacity: 1; }
+  18%  { transform: scale(1.04, 0.004); filter: brightness(5) saturate(0.3); opacity: 1; animation-timing-function: cubic-bezier(0.6, 0, 0.85, 0.5); }
+  32%  { transform: scale(0.003, 0.004); filter: brightness(5) saturate(0.3); opacity: 1; }
+  40%  { transform: scale(0.003, 0.004); filter: brightness(5) saturate(0.3); opacity: 0; }
+  41%  { transform: none; filter: none; opacity: 0; }
+  62%  { opacity: 0; animation-timing-function: ease-out; }
+  100% { transform: none; filter: none; opacity: 1; }
+}
+
+/* The glowing line and dot, drawn over the collapsing picture */
+.crt-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+
+.crt-flash::before {
+  content: '';
+  width: 104vw;
+  height: 3px;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.9), 0 0 28px 8px rgba(var(--text-rgb), 0.45);
+  opacity: 0;
+  animation: crt-line 1.25s linear both;
+}
+
+/* Width (not scaleX) so the glow stays round as the line pulls in to a dot */
+@keyframes crt-line {
+  0%   { width: 104vw; height: 3px; opacity: 0; }
+  9%   { width: 104vw; height: 3px; opacity: 0; }
+  12%  { width: 104vw; height: 3px; opacity: 1; }
+  18%  { width: 104vw; height: 3px; opacity: 1; animation-timing-function: cubic-bezier(0.6, 0, 0.85, 0.5); }
+  32%  { width: 6px; height: 5px; opacity: 1; }
+  36%  { width: 6px; height: 5px; opacity: 1; }
+  46%  { width: 3px; height: 3px; opacity: 0; }
+  100% { width: 3px; height: 3px; opacity: 0; }
+}
+
+/* ── CRT power-on, played when FX is switched on ──
+   The tube struggles to start: the picture blinks in and out, jumps and tears
+   under heavy static for about a second, then the flicker calms and it settles.
+   1.3 s, in step with CRT_ON_MS in SpatialScene.jsx. Each keyframe holds until
+   the next (step-end) so the blinks are hard cuts, not fades; the last stretch
+   eases out smoothly. */
+body:has(.crt-startup) { background: #000; }
+
+.stage.crt-startup {
+  animation: crt-warmup 1.3s step-end both;
+}
+
+@keyframes crt-warmup {
+  0%   { opacity: 0; transform: none; filter: none; }
+  4%   { opacity: 1; transform: translateY(-3%); filter: brightness(2.4) contrast(1.5); }
+  7%   { opacity: 0; }
+  11%  { opacity: 0.6; transform: translate(1%, 2%) skewX(-2deg); filter: brightness(1.7) contrast(1.3); }
+  14%  { opacity: 0.05; transform: none; }
+  19%  { opacity: 1; transform: translateY(4%) scaleY(1.03); filter: brightness(3) contrast(1.6) saturate(0.5); }
+  22%  { opacity: 0.3; transform: translateY(-2%); }
+  26%  { opacity: 0; }
+  31%  { opacity: 0.9; transform: translateX(-1.5%) skewX(1.5deg); filter: brightness(1.9) contrast(1.3); }
+  34%  { opacity: 0.2; transform: none; }
+  39%  { opacity: 1; transform: translateY(-1%); filter: brightness(1.5) contrast(1.2); }
+  43%  { opacity: 0.55; transform: translateY(0.6%); }
+  47%  { opacity: 1; transform: translateY(1.5%); filter: brightness(1.7) contrast(1.25); }
+  51%  { opacity: 0.8; transform: none; }
+  56%  { opacity: 1; transform: translateY(-0.5%); filter: brightness(1.3) contrast(1.1); }
+  62%  { opacity: 0.88; }
+  67%  { opacity: 1; transform: none; filter: brightness(1.25) contrast(1.1); animation-timing-function: ease-out; }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
+/* Static snow and a fast rolling sync bar over the struggling picture */
+.crt-static {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+  background: rgba(150, 150, 150, 0.05);
+  animation: crt-snow-level 1.3s step-end both;
+}
+
+.crt-static::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background-image: var(--noise);
+  background-size: 120px 120px;
+  opacity: 0.5;
+  animation: crt-snow 0.12s steps(3) infinite;
+}
+
+.crt-static::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 28vh;
+  top: -28vh;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.16) 45%, rgba(0, 0, 0, 0.35) 60%, transparent);
+  animation: crt-sync-roll 0.42s linear infinite;
+}
+
+@keyframes crt-snow {
+  0%   { transform: translate(0, 0); }
+  33%  { transform: translate(-7%, 5%); }
+  66%  { transform: translate(6%, -6%); }
+  100% { transform: translate(-3%, 8%); }
+}
+
+@keyframes crt-sync-roll {
+  to { transform: translateY(156vh); }
+}
+
+/* How heavy the static is: thick while the tube struggles, gone once it settles */
+@keyframes crt-snow-level {
+  0%   { opacity: 1; }
+  7%   { opacity: 0.85; }
+  14%  { opacity: 1; }
+  22%  { opacity: 0.7; }
+  26%  { opacity: 1; }
+  34%  { opacity: 0.8; }
+  43%  { opacity: 0.6; }
+  51%  { opacity: 0.5; }
+  62%  { opacity: 0.35; animation-timing-function: ease-out; }
+  90%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
 /* Chromatic fringe on large display type, to match the WebGL aberration */
 .fx-on .display {
   text-shadow: -0.6px 0 rgba(255, 70, 50, 0.45), 0.6px 0 rgba(60, 170, 255, 0.45);
 }
 
+/* ───────────── palettes ─────────────
+   :root holds Orbit, the default. Each palette overrides the same tokens;
+   the 3D colours for each live in src/lib/palettes.js. */
+
+:root[data-palette='mono'],
+:root[data-palette='sketch'] {
+  --bg: #000000;
+  --bg-rgb: 0, 0, 0;
+  --panel: rgba(0, 0, 0, 0.95);
+  --panel-raise: rgba(255, 255, 255, 0.03);
+  --surface: #0a0a0a;
+  --surface-hover: #141414;
+  --surface-sunk: #070707;
+  --line: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.3);
+  --tick: rgba(255, 255, 255, 0.65);
+  --text: #ffffff;
+  --text-rgb: 255, 255, 255;
+  --text-2: #a6a6a6;
+  --text-3: #707070;
+  --accent: #ffffff;
+}
+/* Truly black and white: drain the colour from the 3D scene as well
+   (photos in the gallery keep theirs) */
+:root[data-palette='mono'] .stage canvas,
+:root[data-palette='sketch'] .stage canvas { filter: grayscale(1) contrast(1.06); }
+:root[data-palette='mono'] .fx-on .display {
+  text-shadow: -0.6px 0 rgba(255, 255, 255, 0.35), 0.6px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Sketch: Mono outside, hand-drawn notebook pages for the windows.
+   Everything is handwritten; the frame and folded corners are SketchFrame.jsx. */
+:root[data-palette='sketch'] {
+  --font-display: 'Caveat', 'Segoe Print', 'Comic Sans MS', cursive;
+  --font-sans: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+  --font-mono: 'Patrick Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+}
+/* Tracked-out uppercase labels look typeset, not written */
+:root[data-palette='sketch'] body * { letter-spacing: 0.02em !important; }
+
+/* Inside a window: graphite on grid paper */
+:root[data-palette='sketch'] .monitor {
+  --bg: #f4f4f4;
+  --bg-rgb: 244, 244, 244;
+  --panel: #f4f4f4;
+  --panel-raise: rgba(0, 0, 0, 0.03);
+  --surface: rgba(0, 0, 0, 0.025);
+  --surface-hover: rgba(0, 0, 0, 0.06);
+  --surface-sunk: rgba(0, 0, 0, 0.04);
+  --line: rgba(20, 20, 20, 0.22);
+  --line-strong: rgba(20, 20, 20, 0.6);
+  --tick: transparent;
+  --text: #161616;
+  --text-rgb: 22, 22, 22;
+  --text-2: #464646;
+  --text-3: #767676;
+  --accent: #161616;
+  /* dot-grid notebook paper (lines would moiré against the CRT scanlines) */
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.2) 1px, transparent 1.5px) 11px 11px / 22px 22px,
+    #f4f4f4;
+  outline: none;
+  box-shadow: none;
+  /* both folded corners are cut off the page (sizes = FOLD_TR / FOLD_BL in
+     SketchFrame.jsx); SketchFrame draws the flaps */
+  clip-path: polygon(0 0, calc(100% - 64px) 0, 100% 64px, 100% 100%, 44px 100%, 0 calc(100% - 44px));
+}
+:root[data-palette='sketch'] .monitor-head {
+  border-bottom-color: transparent; /* drawn by hand instead */
+  padding-left: 26px;
+  padding-right: 80px;              /* clear of the folded corner */
+  font-size: 1rem;
+}
+:root[data-palette='sketch'] .eyebrow,
+:root[data-palette='sketch'] .spec-row,
+:root[data-palette='sketch'] .tags { font-size: 0.9rem; }
+:root[data-palette='sketch'] .monitor-body { padding-left: 36px; padding-right: 36px; }
+:root[data-palette='sketch'] .monitor .btn { border-radius: 255px 12px 225px 12px / 12px 225px 12px 255px; border-width: 1.5px; }
+:root[data-palette='sketch'] .monitor .btn--solid:hover { background: #3a3a3a; }
+/* The project grid's hairlines come from its background showing through 1px
+   gaps; on paper, give each card its own scribbled outline instead */
+:root[data-palette='sketch'] .projects-grid { background: none; border: 0; gap: 14px; }
+:root[data-palette='sketch'] .project {
+  background: transparent;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 6px 255px 8px 225px / 225px 8px 255px 6px;
+}
+:root[data-palette='sketch'] .project:nth-child(2n) { border-radius: 225px 7px 255px 6px / 6px 255px 8px 225px; }
+:root[data-palette='sketch'] .project:hover { background: rgba(0, 0, 0, 0.04); }
+
+.sketch-frame {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2;
+  will-change: transform; /* own layer: the boil never repaints the page under it */
+}
+.sketch-ink {
+  fill: none;
+  stroke: #161616;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sketch-ink--thin { stroke-width: 1.1; }
+.sketch-flap { fill: #e1e1e1; }
+.sketch-shadow { fill: rgba(0, 0, 0, 0.16); }
+
+/* Line boil: three drawings, each shown for a third of the cycle */
+.boil { opacity: 0; animation: boil 0.54s linear infinite; }
+@keyframes boil {
+  0%, 33.2% { opacity: 1; }
+  33.4%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boil { animation: none; }
+  .boil:first-child { opacity: 1; }
+}
+
+:root[data-palette='signal'] {
+  --bg: #050507;
+  --bg-rgb: 5, 5, 7;
+  --panel: rgba(8, 9, 12, 0.95);
+  --panel-raise: rgba(255, 255, 255, 0.025);
+  --surface: #090a0d;
+  --surface-hover: #0f1014;
+  --surface-sunk: #0b0b0e;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.2);
+  --tick: rgba(255, 255, 255, 0.55);
+  --text: #ecebe8;
+  --text-rgb: 236, 235, 232;
+  --text-2: #a3a29e;
+  --text-3: #7d7c78;
+  --accent: #ff6a3d;
+}
+
+:root[data-palette='ice'] {
+  --bg: #06070e;
+  --bg-rgb: 6, 7, 14;
+  --panel: rgba(8, 9, 18, 0.95);
+  --panel-raise: rgba(170, 185, 255, 0.03);
+  --surface: #0a0b15;
+  --surface-hover: #10121e;
+  --surface-sunk: #0b0c16;
+  --line: rgba(170, 185, 255, 0.1);
+  --line-strong: rgba(170, 185, 255, 0.24);
+  --tick: rgba(210, 220, 255, 0.55);
+  --text: #e7e9f5;
+  --text-rgb: 231, 233, 245;
+  --text-2: #9aa0bb;
+  --text-3: #6f7591;
+  --accent: #9db4ff;
+}
+
+:root[data-palette='halpha'] {
+  --bg: #09060a;
+  --bg-rgb: 9, 6, 10;
+  --panel: rgba(12, 8, 13, 0.95);
+  --panel-raise: rgba(255, 190, 215, 0.03);
+  --surface: #0e0a10;
+  --surface-hover: #151018;
+  --surface-sunk: #100b12;
+  --line: rgba(255, 190, 215, 0.1);
+  --line-strong: rgba(255, 190, 215, 0.24);
+  --tick: rgba(255, 220, 232, 0.55);
+  --text: #f2e7eb;
+  --text-rgb: 242, 231, 235;
+  --text-2: #b19ea6;
+  --text-3: #7f6e76;
+  --accent: #ff7a9c;
+}
+
+:root[data-palette='phosphor'] {
+  --bg: #030604;
+  --bg-rgb: 3, 6, 4;
+  --panel: rgba(5, 10, 7, 0.95);
+  --panel-raise: rgba(150, 255, 180, 0.03);
+  --surface: #07100a;
+  --surface-hover: #0c170f;
+  --surface-sunk: #08120b;
+  --line: rgba(150, 255, 180, 0.1);
+  --line-strong: rgba(150, 255, 180, 0.24);
+  --tick: rgba(200, 255, 215, 0.55);
+  --text: #dcf2e1;
+  --text-rgb: 220, 242, 225;
+  --text-2: #8fa996;
+  --text-3: #627a69;
+  --accent: #5dff8f;
+}
+
 /* ───────────── 3D monitor panel ───────────── */
+.monitor-shell { position: relative; width: 100%; height: 100%; }
+
 .monitor {
   position: relative;
   display: flex;
@@ -445,7 +805,7 @@ ul { list-style: none; }
 .btn:hover { border-color: var(--text); }
 .btn:hover svg { transform: translate(2px, -2px); }
 
-.btn--solid { background: var(--text); color: #050507; border-color: var(--text); }
+.btn--solid { background: var(--text); color: var(--bg); border-color: var(--text); }
 .btn--solid:hover { background: #fff; }
 
 .btn--ghost { border-color: transparent; padding: 0; height: auto; color: var(--text-2); }
@@ -523,11 +883,11 @@ ul { list-style: none; }
   flex-direction: column;
   min-height: 230px;
   padding: 22px 24px 24px;
-  background: #090a0d;
+  background: var(--surface);
   transition: background-color 0.3s ease;
 }
 
-.project:hover { background: #0f1014; }
+.project:hover { background: var(--surface-hover); }
 
 .project-top {
   display: flex;
@@ -586,7 +946,7 @@ ul { list-style: none; }
   overflow: hidden;
   break-inside: avoid;
   cursor: zoom-in;
-  background-color: #0b0b0e;
+  background-color: var(--surface-sunk);
   background-size: cover;
   background-position: center;
   outline: 1px solid var(--line);
@@ -636,7 +996,7 @@ ul { list-style: none; }
   align-items: center;
   justify-content: center;
   padding: 4.5rem 1rem 1.5rem;
-  background: rgba(5, 5, 7, 0.96);
+  background: rgba(var(--bg-rgb), 0.96);
   animation: fade-in 0.25s ease both;
 }
 
@@ -654,7 +1014,7 @@ ul { list-style: none; }
   max-width: 100%;
   max-height: calc(100dvh - 10rem);
   object-fit: contain;
-  background-color: #0b0b0e;
+  background-color: var(--surface-sunk);
   background-size: cover;
   outline: 1px solid var(--line);
 }
@@ -795,4 +1155,172 @@ ul { list-style: none; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ───────────── Acoustics: immersive station ───────────── */
+.stage-spot {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  background: radial-gradient(ellipse 60% 62% at 50% 54%, transparent 0%, transparent 34%, rgba(0, 0, 0, 0.55) 68%, rgba(0, 0, 0, 0.95) 100%);
+}
+
+.is-immersive .stage-spot { opacity: 1; }
+
+/* The header stays; the bottom readout and frame corners step away so the
+   piano scene (and its own controls) fill the rest of the screen */
+.hud-bottom, .frame-corners { transition: opacity 0.6s ease; }
+.is-immersive .hud-bottom,
+.is-immersive .frame-corners { opacity: 0; pointer-events: none; }
+
+.immersive-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  font-family: var(--font-mono);
+}
+
+.immersive-ui > * {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.immersive-ui.is-visible > * { opacity: 1; pointer-events: auto; }
+.immersive-ui.is-visible > .imm-hint { pointer-events: none; }
+
+/* Sits just above the bottom controls, out of the header's way */
+.imm-credit {
+  position: absolute;
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 44px);
+  right: clamp(16px, 2.6vw, 40px);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  transition: color 0.2s ease, opacity 0.6s ease;
+}
+
+.imm-credit:hover { color: var(--text); }
+
+@media (max-width: 640px) {
+  .imm-credit { top: auto; bottom: 108px; right: auto; left: 16px; }
+}
+
+.imm-hint {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* the hint has its own visibility on top of the overlay's */
+.immersive-ui > .imm-hint { opacity: 0; }
+.immersive-ui > .imm-hint.is-visible { opacity: 1; }
+
+.imm-bottom {
+  position: absolute;
+  left: clamp(16px, 2.6vw, 40px);
+  right: clamp(16px, 2.6vw, 40px);
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.imm-now {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.imm-state { color: var(--accent); white-space: nowrap; }
+.imm-title { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0; text-transform: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.imm-time { color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.imm-controls { display: flex; align-items: center; gap: 18px; }
+
+.record-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.record-label em { font-style: normal; color: var(--text-3); letter-spacing: 0.08em; }
+
+.rooms { display: flex; border: 1px solid var(--line-strong); }
+
+.rooms button {
+  height: 28px;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-right: 1px solid var(--line-strong);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.rooms button:last-child { border-right: 0; }
+.rooms button:hover { color: var(--text); }
+.rooms button[aria-checked='true'] { color: var(--bg); background: var(--text); }
+
+.volume { display: flex; align-items: center; gap: 8px; }
+.vol-btn { display: inline-flex; color: var(--text-2); transition: color 0.2s ease; }
+.vol-btn:hover { color: var(--text); }
+
+.volume input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.volume input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) var(--vol), var(--line-strong) var(--vol));
+}
+
+.volume input[type='range']::-moz-range-track { height: 2px; background: var(--line-strong); }
+.volume input[type='range']::-moz-range-progress { height: 2px; background: var(--accent); }
+
+.volume input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -4px;
+  background: var(--text);
+  border: 0;
+}
+
+.volume input[type='range']::-moz-range-thumb { width: 10px; height: 10px; background: var(--text); border: 0; border-radius: 0; }
+
+@media (max-width: 640px) {
+  .imm-bottom { flex-direction: column; align-items: flex-start; }
+  .imm-title { font-size: 1.1rem; }
+  .imm-hint { top: 16%; font-size: 0.64rem; }
 }

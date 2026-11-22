@@ -1,0 +1,11 @@
+Model Information:
+* title:	Old Piano
+* source:	https://sketchfab.com/3d-models/old-piano-8b6b1487054a4a1b9a640387f5b819c2
+* author:	paraverun (https://sketchfab.com/paraverun)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Old Piano" (https://sketchfab.com/3d-models/old-piano-8b6b1487054a4a1b9a640387f5b819c2) by paraverun (https://sketchfab.com/paraverun) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

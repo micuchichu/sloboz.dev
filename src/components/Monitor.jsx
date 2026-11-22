@@ -2,6 +2,8 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { usePalette } from '../lib/palettes';
+import SketchFrame from './SketchFrame';
 
 // World units per CSS pixel for drei <Html transform distanceFactor={6}>
 export const MONITOR_PX_TO_WORLD = 6 / 400;
@@ -12,6 +14,8 @@ export default function Monitor({ position, rotation, children, width = 900, hei
   const worldPos = useMemo(() => new THREE.Vector3(), []);
   const lastOpacity = useRef('1');
   const lastPE = useRef('auto');
+  const sketch = usePalette().id === 'sketch';
+  const seed = parseInt(index, 10) || label?.length || 1;
 
   // Fade out and stop intercepting pointer events while the camera is far away (mid-flight)
   useFrame((state) => {
@@ -45,19 +49,23 @@ export default function Monitor({ position, rotation, children, width = 900, hei
       >
         <div
           ref={containerRef}
-          className={className}
+          className="monitor-shell"
           style={{ pointerEvents: 'auto' }}
           onWheel={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="monitor-head">
-            <span>
-              {index && <span className="idx">{index}</span>}
-              {label}
-            </span>
-            {meta && <span className="monitor-meta">{meta}</span>}
+          <div className={className}>
+            <div className="monitor-head">
+              <span>
+                {index && <span className="idx">{index}</span>}
+                {label}
+              </span>
+              {meta && <span className="monitor-meta">{meta}</span>}
+            </div>
+            <div className="monitor-body">{children}</div>
           </div>
-          <div className="monitor-body">{children}</div>
+          {/* Drawn outside the clipped paper so strokes can overshoot its edges */}
+          {sketch && <SketchFrame width={width} height={height} seed={seed} />}
         </div>
       </Html>
     </group>

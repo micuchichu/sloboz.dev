@@ -16,7 +16,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ color: '#ff5577', padding: '2rem', background: '#030204', height: '100%', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ color: '#ff5577', padding: '2rem', background: '#030408', height: '100%', fontFamily: 'var(--font-mono)' }}>
           <h2>SYSTEM FAILURE</h2>
           <p style={{ color: 'var(--text-muted)', margin: '0.75rem 0 1.25rem' }}>
             The 3D scene couldn't start. Your browser may not support WebGL.

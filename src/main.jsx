@@ -1,6 +1,7 @@
 // src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './lib/palettes'; // sets data-palette before the first paint
 import App from './App';
 import { hideBoot } from './boot';
 import './index.css';

@@ -5,24 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>sloboz.dev</title>
     <meta name="description" content="sloboz.dev — software developer. C++, OpenGL, voxel engines, graphics & systems.">
-    <meta name="theme-color" content="#030204">
+    <meta name="theme-color" content="#030408">
     <meta name="color-scheme" content="dark">
     <meta property="og:type" content="website">
     <meta property="og:title" content="sloboz.dev">
     <meta property="og:description" content="Software developer. C++, OpenGL, voxel engines, graphics & systems.">
     <meta property="og:url" content="https://sloboz.dev/">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23030204'/%3E%3Cpath d='M32 9c2 13 10 21 23 23-13 2-21 10-23 23-2-13-10-21-23-23 13-2 21-10 23-23z' fill='%2300e5ff'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23030408'/%3E%3Cpath d='M32 9c2 13 10 21 23 23-13 2-21 10-23 23-2-13-10-21-23-23 13-2 21-10 23-23z' fill='%236ee7cf'/%3E%3C/svg%3E">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Instrument+Serif&family=JetBrains+Mono:wght@400..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..800&family=Caveat:wght@400..700&family=Patrick+Hand&display=swap" rel="stylesheet">
 
     <style>
       /* Boot loader: paints instantly, before any JS bundle is downloaded */
-      html, body { background: #030204; margin: 0; }
+      html, body { background: #030408; margin: 0; }
       #boot {
         position: fixed; inset: 0; z-index: 9999; overflow: hidden;
-        background: #050507; color: #ecebe8;
+        background: #05070c; color: #e5edf3;
         transition: opacity .7s ease, visibility .7s;
       }
       #boot.done { opacity: 0; visibility: hidden; }
@@ -47,7 +47,7 @@
         font: 700 11px/1 'JetBrains Mono', ui-monospace, Consolas, monospace; letter-spacing: .06em;
         color: rgba(255, 255, 255, .82);
       }
-      #boot .frag.cyan { color: #ff6a3d; }
+      #boot .frag.cyan { color: #6ee7cf; }
       #boot .bar { position: absolute; left: 20px; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); }
       #boot .track { height: 6px; border: 1px solid rgba(255, 255, 255, .85); box-sizing: border-box; }
       #boot .fill { height: 100%; width: 0; background: #fff;  }
@@ -104,7 +104,7 @@
           reach = Math.sqrt(W * W + H * H) * 0.5;
           cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          ctx.fillStyle = '#030204'; ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = '#030408'; ctx.fillRect(0, 0, W, H);
         }
         resize();
         addEventListener('resize', resize);
@@ -117,7 +117,7 @@
         } else showWord();
 
         // ── particles: debris launched from the singularity ──
-        var COLORS = ['255,255,255', '255,255,255', '236,235,232', '210,225,255', '190,205,255', '255,226,190', '255,106,61'];
+        var COLORS = ['255,255,255', '255,255,255', '236,235,232', '210,225,255', '190,205,255', '255,226,190', '110,231,207'];
         var N = W < 768 ? 280 : 650, parts = [];
         for (i = 0; i < N; i++) {
           var a = Math.random() * Math.PI * 2;
@@ -164,7 +164,7 @@
             // Flash + shockwave
             if (tb < 0.7) {
               var f = 1 - tb / 0.7;
-              glow(cx, cy, 30 + tb * reach * 2.6, [[0, 'rgba(255,255,255,' + 0.9 * f * f + ')'], [0.3, 'rgba(200,215,255,' + 0.35 * f * f + ')'], [1, 'rgba(255,106,61,0)']]);
+              glow(cx, cy, 30 + tb * reach * 2.6, [[0, 'rgba(255,255,255,' + 0.9 * f * f + ')'], [0.3, 'rgba(200,215,255,' + 0.35 * f * f + ')'], [1, 'rgba(110,231,207,0)']]);
             }
             if (tb < 1.4) {
               ctx.strokeStyle = 'rgba(236,235,232,' + 0.55 * (1 - tb / 1.4) + ')';
@@ -172,7 +172,7 @@
               ctx.beginPath(); ctx.ellipse(cx, cy, tb * reach * 1.5, tb * reach * 1.23, 0, 0, 6.2832); ctx.stroke();
             }
             // Lingering core glow
-            glow(cx, cy, 160, [[0, 'rgba(255,240,220,' + Math.max(0.05, 0.5 - tb * 0.3) + ')'], [1, 'rgba(255,106,61,0)']]);
+            glow(cx, cy, 160, [[0, 'rgba(255,240,220,' + Math.max(0.05, 0.5 - tb * 0.3) + ')'], [1, 'rgba(110,231,207,0)']]);
 
             // Background stars fade in as the universe cools
             var sa = Math.min(1, Math.max(0, (tb - 0.3) / 1.6));
