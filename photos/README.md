@@ -20,3 +20,5 @@ photo in `photos/night/` or `photos/day/` instead of the top level.
 
 This folder is git-ignored (except this file) so your full-resolution originals, and their GPS
 location, never get pushed. Commit `public/gallery/` and `src/data/gallery.json` instead.
+Where the originals aren't present (the GitHub Pages build, a fresh clone), the build leaves
+those committed files exactly as they are.

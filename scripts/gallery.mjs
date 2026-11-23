@@ -205,6 +205,15 @@ export async function syncGallery({ log = console.log } = {}) {
   const entries = [...await list('', null), ...await list('night', 'night'), ...await list('day', 'day')]
     .sort((a, b) => a.rel.localeCompare(b.rel));
 
+  // The originals are git-ignored (they carry GPS data), so a fresh checkout,
+  // such as the GitHub Pages build, has the folder (its README is committed) but
+  // no photos in it. Syncing that would wipe the committed web copies and publish
+  // an empty gallery, so with no originals present the committed gallery is kept.
+  if (entries.length === 0 && (previous?.photos?.length ?? 0) > 0) {
+    log(`[gallery] no original photos here; keeping the committed gallery (${previous.photos.length} photos)`);
+    return { skipped: true, photos: previous.photos.length };
+  }
+
   await fs.mkdir(FULL_DIR, { recursive: true });
   await fs.mkdir(THUMB_DIR, { recursive: true });
 
