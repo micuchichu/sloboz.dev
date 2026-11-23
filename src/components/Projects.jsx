@@ -18,7 +18,7 @@ const projects = [
   },
   {
     title: 'Exam Architect',
-    description: 'Exam generator and problem randomized built specifically for pre-admission testing to Politehnica București.',
+    description: 'Exam generator and problem randomizer built specifically for pre-admission testing to Politehnica București.',
     tags: ['TypeScript', 'React', 'Algorithms'],
     link: 'https://github.com/micuchichu/exam-architect',
     span: 1

@@ -81,6 +81,52 @@ function fitDistance(pxW, pxH, viewW, viewH, isMobile) {
 }
 
 /**
+ * Normals palette: draw every solid surface with its normal as its colour, the way a
+ * renderer's G-buffer debug view shows it (+X salmon, +Y mint, +Z lilac). Glows,
+ * atmospheres and sprites have no surface of their own, so they're hidden; stars and
+ * lines keep their look. Objects that mount later (stations, the piano) are picked up
+ * on the next frame, and everything is put back when the palette changes.
+ */
+const NORMAL_MATERIAL = new THREE.MeshNormalMaterial();
+
+const isGlow = (material) => {
+  const m = Array.isArray(material) ? material[0] : material;
+  return !m || m.transparent || m.blending === THREE.AdditiveBlending || m.side === THREE.BackSide;
+};
+
+function toNormals(o) {
+  if (o.userData.normals) return;
+  if (o.isSprite || (o.isMesh && isGlow(o.material))) {
+    o.userData.normals = { visible: o.visible };
+    o.visible = false;
+  } else if (o.isMesh) {
+    o.userData.normals = { material: o.material };
+    o.material = NORMAL_MATERIAL;
+  } else {
+    o.userData.normals = {};
+  }
+}
+
+function fromNormals(o) {
+  const saved = o.userData.normals;
+  if (!saved) return;
+  if ('visible' in saved) o.visible = saved.visible;
+  if (saved.material) o.material = saved.material;
+  delete o.userData.normals;
+}
+
+function NormalsView({ on }) {
+  const scene = useThree((s) => s.scene);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    scene.traverse(on ? toNormals : fromNormals);
+    invalidate();
+  }, [on, scene, invalidate]);
+  useFrame(() => { if (on) scene.traverse(toNormals); });
+  return null;
+}
+
+/**
  * The canvas runs in "demand" mode. This drives it: every display frame while
  * something is moving, and at IDLE_FPS otherwise (saves GPU/battery while reading).
  */
@@ -794,6 +840,7 @@ export default function SpatialScene() {
       >
         <color attach="background" args={[palette.background]} />
 
+        <NormalsView on={!!palette.normals} />
         <FrameDriver activeRef={activeRef} idleFps={station === IMMERSIVE ? 120 : reducedMotion ? 15 : IDLE_FPS} />
         <CameraReadout elRef={readoutRef} />
 
@@ -848,7 +895,7 @@ export default function SpatialScene() {
         {/* Post-processing: skipped (and never downloaded) on mobile/low-end devices */}
         {!isLowEnd && (
           <Suspense fallback={null}>
-            <Effects fx={showFx} />
+            <Effects fx={showFx} bloom={palette.bloom} />
           </Suspense>
         )}
       </Canvas>

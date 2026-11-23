@@ -1,7 +1,7 @@
 // The Acoustics station: an old upright piano on a dark "stage" (just light
 // and darkness, no set), light bricks growing out of its keys like a reverse
 // waterfall, and the recordings as sheet music drifting around the viewer.
-// Click a sheet (or drag it onto the piano) to play it; drag elsewhere to orbit.
+// Click a sheet (or drag it onto the piano) to play it, or throw it around; drag elsewhere to orbit.
 //
 // Piano model: "Old Piano" by paraverun, CC BY 4.0
 // https://sketchfab.com/3d-models/old-piano-8b6b1487054a4a1b9a640387f5b819c2
@@ -11,6 +11,8 @@ import { Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { acoustics, engine, useAcoustics } from '../lib/acousticsStore';
 import { getPalette } from '../lib/palettes';
+import { floatStep, restingSpot, BAND_MIN, BAND_MAX, SPIN_DRAG, MAX_THROW } from '../lib/sheetFloat';
+import { PaperFlex, paperMaterial, PAPER_SEGMENTS } from '../lib/paperBend';
 
 const WHITE_KEY = new THREE.Color('#f1ede4');
 const WHITE_KEY_DOWN = new THREE.Color('#a9a396');
@@ -467,7 +469,9 @@ function Bricks() {
     if (st.playing && st.current >= 0) {
       const song = st.tracks[st.current].song;
       const t = engine.time;
-      if (song !== c.song || t < c.lastT - 0.05) {
+      // A new song or a jump (the position slider): pick up from the new spot
+      // instead of firing every note that was skipped over
+      if (song !== c.song || t < c.lastT - 0.05 || t > c.lastT + 0.5) {
         c.song = song;
         c.index = 0;
         while (c.index < song.notes.length && song.notes[c.index].start <= t) c.index++;
@@ -535,17 +539,30 @@ function Bricks() {
 
 const SHEET_W = 2.3, SHEET_H = 3.25;
 
-function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
+// Loose sheets float, get thrown and keep out of the way: see lib/sheetFloat.js
+
+function Sheet({ index, track, total, active, playingIndex, pianoRef, bodies }) {
   const outer = useRef();
   const [hover, setHover] = useState(false);
   const drag = useRef(null);
   const pos = useRef(null);
+  const vel = useRef(new THREE.Vector3());
+  const spin = useRef(new THREE.Vector3());
   const size = useThree((s) => s.size);
   const tmp = useMemo(() => ({
     target: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(), e: new THREE.Euler(),
     v: new THREE.Vector3(), m: new THREE.Matrix4(), up: new THREE.Vector3(0, 1, 0), box: new THREE.Box3(),
     cam: new THREE.Vector3(), fwd: new THREE.Vector3(), right: new THREE.Vector3(), base: new THREE.Vector3(),
+    rel: new THREE.Vector3(), home: new THREE.Vector3(), piano: new THREE.Vector3(), push: new THREE.Vector3(),
+    dq: new THREE.Quaternion(), axis: new THREE.Vector3(),
+    prev: new THREE.Vector3(), frameVel: new THREE.Vector3(), local: new THREE.Vector3(), inv: new THREE.Quaternion(),
   }), []);
+  const flex = useMemo(() => new PaperFlex(index * 1.7), [index]);
+  // Shared with the other sheets, so they can keep their distance
+  useEffect(() => {
+    bodies.current[index] = { pos };
+    return () => { delete bodies.current[index]; };
+  }, [bodies, index]);
   const controls = useThree((st) => st.controls);
   const onDesk = playingIndex === index;
 
@@ -556,8 +573,11 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
     // readable from any angle, kept under the bloom threshold so ink stays crisp.
     const front = new THREE.MeshLambertMaterial({ map, color: '#c4beb2', emissiveMap: map, emissive: '#a39d91', emissiveIntensity: 0.3, side: THREE.FrontSide });
     const back = new THREE.MeshLambertMaterial({ color: '#d9d1c0', side: THREE.FrontSide });
+    // Both faces bend together, like one sheet of paper (lib/paperBend.js)
+    paperMaterial(front, flex.uniforms, 1, SHEET_W / 2, SHEET_H / 2);
+    paperMaterial(back, flex.uniforms, -1, SHEET_W / 2, SHEET_H / 2);
     return { front, back };
-  }, [track]);
+  }, [track, flex]);
   useEffect(() => () => { mats.front.map.dispose(); mats.front.dispose(); mats.back.dispose(); }, [mats]);
   useEffect(() => () => { document.body.style.cursor = 'auto'; }, []);
 
@@ -569,6 +589,8 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
     if (!active && !onDesk && !drag.current) {
       g.visible = false;
       pos.current = null;
+      tmp.prev.set(0, 0, 0);      // reappearing elsewhere isn't motion: don't let it bend the paper
+      tmp.frameVel.set(0, 0, 0);
       g.scale.setScalar(0.001);
       return;
     }
@@ -581,36 +603,66 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
     tmp.base.set(0, 1, 0).applyQuaternion(camera.quaternion);
     const dt = Math.min(delta, 0.1);
     const time = clock.elapsedTime;
-    let k;
+
+    const aspect = size.width / size.height;
+    // Smaller while floating on narrow (portrait) screens; full size on the desk
+    const fit = onDesk ? 1 : THREE.MathUtils.clamp(aspect / 1.1, 0.6, 1);
+    const env = {
+      cam: tmp.cam, fwd: tmp.fwd, right: tmp.right, up: tmp.base, aspect, tanHalfFov: TAN_HALF_FOV, index,
+      sheetHalfW: (SHEET_W / 2) * fit, sheetHalfH: (SHEET_H / 2) * fit, piano: null, others: [],
+    };
+    if (!pos.current) {
+      // First appearance: spread round the band, in front of the viewer
+      const a = (index / Math.max(1, total)) * Math.PI * 2 + 0.6;
+      const depth = 9;
+      const halfH = depth * TAN_HALF_FOV, halfW = halfH * aspect;
+      const r = (BAND_MIN + BAND_MAX) / 2;
+      tmp.target.copy(tmp.cam)
+        .addScaledVector(tmp.fwd, depth)
+        .addScaledVector(tmp.right, Math.cos(a) * halfW * r)
+        .addScaledVector(tmp.base, Math.sin(a) * halfH * r);
+      pos.current = restingSpot(tmp.target, env, new THREE.Vector3());
+      vel.current.set(0, 0, 0);
+    }
+    const p = pos.current, v = vel.current;
 
     if (drag.current) {
-      tmp.target.copy(drag.current.point);
-      k = 20;
+      p.lerp(drag.current.point, 1 - Math.exp(-20 * dt));
+      v.set(0, 0, 0);
+      spin.current.set(0, 0, 0);
     } else if (onDesk && pianoRef.current) {
       // music desk, converted from piano space into this group's space
       tmp.target.copy(DESK_POS);
       pianoRef.current.localToWorld(tmp.target);
       g.parent.worldToLocal(tmp.target);
-      k = 3.5;
+      p.lerp(tmp.target, 1 - Math.exp(-3.5 * dt));
+      v.set(0, 0, 0);
+      spin.current.set(0, 0, 0);
     } else {
-      // A loose ring around the line of sight, ~9 units in front of the viewer:
-      // the sheets frame the piano but never go near or behind it
-      const depth = 9 + Math.sin(time * 0.27 + index * 2.1) * 1.4;
-      const halfH = depth * TAN_HALF_FOV;
-      const halfW = halfH * (size.width / size.height);
-      const a = (index / Math.max(1, total)) * Math.PI * 2 + time * 0.028 + 0.6;
-      tmp.target.copy(tmp.cam)
-        .addScaledVector(tmp.fwd, depth)
-        .addScaledVector(tmp.right, Math.cos(a) * halfW * 0.74)
-        .addScaledVector(tmp.base, Math.sin(a) * halfH * 0.66 - 0.6);
-      k = 1.8;
+      // Where it would rest: its own spot, nudged into the band around the edge of the view
+      if (pianoRef.current) {
+        pianoRef.current.getWorldPosition(tmp.piano);
+        g.parent.worldToLocal(tmp.piano);
+      }
+      for (const other of Object.values(bodies.current)) {
+        if (other?.pos.current && other.pos !== pos) env.others.push(other.pos.current);
+      }
+      env.piano = pianoRef.current ? tmp.piano : null;
+      floatStep(p, v, env, dt);
     }
+    g.position.copy(p);
 
-    if (!pos.current) pos.current = tmp.target.clone();
-    pos.current.lerp(tmp.target, 1 - Math.exp(-k * dt));
-    g.position.copy(pos.current);
+    // How it's moving through the air, in the sheet's own frame: this is what bends it
+    if (tmp.prev.lengthSq() === 0) tmp.prev.copy(p);
+    tmp.local.copy(p).sub(tmp.prev).divideScalar(Math.max(dt, 1e-3));
+    tmp.prev.copy(p);
+    tmp.frameVel.lerp(tmp.local, 1 - Math.exp(-14 * dt));
+    tmp.local.copy(tmp.frameVel).applyQuaternion(tmp.inv.copy(g.quaternion).invert());
+    flex.update(tmp.local, dt, onDesk && !drag.current);
+    const airSpeed = tmp.frameVel.length();
 
-    // Orientation: on the desk, lean back against it; otherwise face the viewer and flutter gently
+    // Orientation: on the desk, lean back against it; otherwise face the viewer and
+    // flutter gently, rocking more the faster it moves, like paper catching the air
     if (onDesk && !drag.current && pianoRef.current) {
       pianoRef.current.getWorldQuaternion(tmp.q);
       g.parent.getWorldQuaternion(tmp.q2).invert();
@@ -618,17 +670,24 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
     } else {
       tmp.m.lookAt(tmp.cam, g.position, tmp.base);
       tmp.q.setFromRotationMatrix(tmp.m);
-      const flutter = drag.current ? 0 : 1;
+      const flutter = drag.current ? 0.3 : 1;
+      const rock = Math.min(1, airSpeed / 14);
       tmp.q.multiply(tmp.q2.setFromEuler(tmp.e.set(
-        Math.sin(time * 0.6 + index) * 0.18 * flutter,
-        Math.sin(time * 0.45 + index * 1.3) * 0.28 * flutter,
+        (Math.sin(time * 0.6 + index) * 0.18 + Math.sin(time * 7.3 + index) * 0.22 * rock) * flutter,
+        (Math.sin(time * 0.45 + index * 1.3) * 0.28 + Math.sin(time * 5.1 + index * 2) * 0.3 * rock) * flutter,
         Math.sin(time * 0.33 + index * 0.7) * 0.1 * flutter
       )));
     }
-    g.quaternion.slerp(tmp.q, 1 - Math.exp(-(drag.current || onDesk ? 7 : 3) * dt));
+    // A thrown sheet tumbles with its spin; as the spin dies it turns back to face you
+    const w = spin.current, spinRate = w.length();
+    if (spinRate > 0.02) {
+      tmp.dq.setFromAxisAngle(tmp.axis.copy(w).divideScalar(spinRate), spinRate * dt);
+      g.quaternion.premultiply(tmp.dq);
+      w.multiplyScalar(Math.exp(-SPIN_DRAG * dt));
+    }
+    const settle = THREE.MathUtils.clamp(1 - spinRate / 2.5, 0, 1);
+    g.quaternion.slerp(tmp.q, (1 - Math.exp(-(drag.current || onDesk ? 7 : 3) * dt)) * settle);
 
-    // Smaller while floating on narrow (portrait) screens; full size on the desk
-    const fit = onDesk ? 1 : THREE.MathUtils.clamp((size.width / size.height) / 1.1, 0.6, 1);
     const s = fit * (hover && active ? 1.08 : 1);
     g.scale.lerp(tmp.v.set(s, s, s), 1 - Math.exp(-10 * dt));
   });
@@ -655,6 +714,7 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
       point: pos.current.clone(),
       moved: false,
       raycaster: new THREE.Raycaster(),
+      trail: [], // recent pointer positions, for the speed of a throw
     };
     drag.current = d;
     document.body.style.cursor = 'grabbing';
@@ -665,6 +725,9 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
       const hit = new THREE.Vector3();
       if (rayFrom(ev, d.raycaster).intersectPlane(d.plane, hit) && outer.current) {
         d.point.copy(outer.current.parent.worldToLocal(hit));
+        const now = performance.now();
+        d.trail.push({ t: now, p: d.point.clone() });
+        while (d.trail.length > 2 && now - d.trail[0].t > 90) d.trail.shift();
       }
     };
     const up = (ev) => {
@@ -682,8 +745,18 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
       // Dropped "onto" the piano = the pointer ray passes through the piano
       const ray = rayFrom(ev, d.raycaster);
       const overPiano = pianoRef.current && ray.intersectsBox(tmp.box.setFromObject(pianoRef.current));
-      if (overPiano) acoustics.play(index);
-      else if (onDesk) acoustics.eject();
+      if (overPiano) { acoustics.play(index); return; }
+      if (onDesk) acoustics.eject();
+      // Let go while moving: it flies off at the hand's speed, spinning with the swing
+      const tr = d.trail, a = tr[0], b = tr[tr.length - 1];
+      const dtMs = b && a ? b.t - a.t : 0;
+      if (dtMs > 8 && performance.now() - b.t < 120) {
+        vel.current.copy(b.p).sub(a.p).multiplyScalar(1000 / dtMs);
+        if (vel.current.length() > MAX_THROW) vel.current.setLength(MAX_THROW);
+        const fwd = camera.getWorldDirection(new THREE.Vector3());
+        spin.current.crossVectors(fwd, vel.current).multiplyScalar(0.22)
+          .add(new THREE.Vector3(0, 0, (Math.random() - 0.5) * 0.15 * vel.current.length()).applyQuaternion(camera.quaternion));
+      }
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -697,17 +770,18 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
       onPointerOver={(e) => { if (!active) return; e.stopPropagation(); setHover(true); document.body.style.cursor = drag.current ? 'grabbing' : 'grab'; }}
       onPointerOut={() => { setHover(false); if (!drag.current) document.body.style.cursor = 'auto'; }}
     >
+      {/* subdivided so the paper can bend; the bend itself is in the materials' shader */}
       <mesh material={mats.front}>
-        <planeGeometry args={[SHEET_W, SHEET_H]} />
+        <planeGeometry args={[SHEET_W, SHEET_H, ...PAPER_SEGMENTS]} />
       </mesh>
       <mesh material={mats.back} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[SHEET_W, SHEET_H]} />
+        <planeGeometry args={[SHEET_W, SHEET_H, ...PAPER_SEGMENTS]} />
       </mesh>
       {hover && active && (
         <Html center position={[0, SHEET_H / 2 + 0.55, 0]} zIndexRange={[0, 0]} style={{ pointerEvents: 'none' }}>
           <div className="record-label">
             <span>{track.title}</span>
-            <em>{onDesk ? 'click to stop' : 'click or drag onto the piano'}</em>
+            <em>{onDesk ? 'click to stop' : 'click, drag onto the piano, or throw it'}</em>
           </div>
         </Html>
       )}
@@ -720,6 +794,7 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef }) {
 export default function AcousticsWorld({ active }) {
   const s = useAcoustics();
   const pianoRef = useRef();
+  const sheetBodies = useRef({});
   const scene = useThree((st) => st.scene);
   const glow = useMemo(glowTexture, []);
   useEffect(() => () => glow.dispose(), [glow]);
@@ -788,6 +863,7 @@ export default function AcousticsWorld({ active }) {
           active={active}
           playingIndex={s.current}
           pianoRef={pianoRef}
+          bodies={sheetBodies}
         />
       ))}
     </group>

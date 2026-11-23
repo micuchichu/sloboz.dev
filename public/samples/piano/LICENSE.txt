@@ -1,0 +1,9 @@
+Piano samples in this folder (A0.mp3 … C8.mp3)
+
+Salamander Grand Piano V3 by Alexander Holm, a recording of a Yamaha C5 grand.
+Licensed under Creative Commons Attribution 3.0 (CC BY 3.0):
+https://creativecommons.org/licenses/by/3.0/
+
+Original recording: https://archive.org/details/SalamanderGrandPianoV3
+These 30 MP3 files are the unmodified subset (one note every three semitones)
+published by the Tone.js project at https://tonejs.github.io/audio/salamander/

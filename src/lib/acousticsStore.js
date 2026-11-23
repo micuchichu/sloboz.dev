@@ -53,6 +53,8 @@ function set(patch) {
 
 engine.onEnded = () => set({ playing: false, current: -1 });
 
+let resumeAfterScrub = false;
+
 export const acoustics = {
   get: () => state,
   subscribe(fn) {
@@ -63,6 +65,7 @@ export const acoustics = {
   async load() {
     if (state.status !== 'idle') return;
     set({ status: 'loading' });
+    engine.loadSamples(); // the piano recordings load alongside the songs
     try {
       const list = await Promise.all(Object.entries(FILES).map(async ([path, url]) => {
         const buf = await fetch(url).then((r) => r.arrayBuffer());
@@ -81,6 +84,10 @@ export const acoustics = {
     if (!track) return;
     if (index !== state.current) engine.load(track.song);
     set({ current: index, playing: true });
+    // Give the piano samples a moment if they're still on their way, rather than
+    // starting on the synthesised piano and switching sound mid-piece
+    await Promise.race([engine.loadSamples(), new Promise((r) => setTimeout(r, 4000))]);
+    if (state.current !== index || !state.playing) return;
     await engine.play();
   },
 
@@ -93,6 +100,26 @@ export const acoustics = {
     if (state.current < 0) return;
     if (state.playing) acoustics.pause();
     else acoustics.play(state.current);
+  },
+
+  // Jump to a point in the piece (keeps playing if it was)
+  seek(t) {
+    engine.seek(t);
+  },
+
+  // Dragging the position slider: silent while it moves (the keys still follow),
+  // then carries on from where it was let go if it was playing before
+  scrubStart() {
+    resumeAfterScrub = state.playing;
+    if (state.playing) engine.pause();
+  },
+  scrubTo(t) {
+    engine.seek(t);
+  },
+  async scrubEnd(t) {
+    engine.seek(t);
+    if (resumeAfterScrub && state.current >= 0) await engine.play(t);
+    resumeAfterScrub = false;
   },
 
   // Take the record off the piano

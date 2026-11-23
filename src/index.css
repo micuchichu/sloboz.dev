@@ -580,6 +580,7 @@ body:has(.crt-startup) { background: #000; }
 :root[data-palette='sketch'] .monitor-body { padding-left: 36px; padding-right: 36px; }
 :root[data-palette='sketch'] .monitor .btn { border-radius: 255px 12px 225px 12px / 12px 225px 12px 255px; border-width: 1.5px; }
 :root[data-palette='sketch'] .monitor .btn--solid:hover { background: #3a3a3a; }
+
 /* The project grid's hairlines come from its background showing through 1px
    gaps; on paper, give each card its own scribbled outline instead */
 :root[data-palette='sketch'] .projects-grid { background: none; border: 0; gap: 14px; }
@@ -691,6 +692,176 @@ body:has(.crt-startup) { background: #000; }
   --text-2: #8fa996;
   --text-3: #627a69;
   --accent: #5dff8f;
+}
+
+/* Normals: the scene as a renderer's normal buffer (materials swapped in
+   SpatialScene.jsx). The UI uses the same code: a direction is a colour, so
+   anything facing you is +Z lilac, and each window edge takes the colour of
+   the way it faces, like a bevel baked into a normal map. */
+:root[data-palette='normals'] {
+  --bg: #07071a;
+  --bg-rgb: 7, 7, 26;
+  --panel: rgba(9, 9, 28, 0.95);
+  --panel-raise: rgba(128, 128, 255, 0.04);
+  --surface: #0c0c24;
+  --surface-hover: #12122e;
+  --surface-sunk: #0a0a20;
+  --line: rgba(128, 128, 255, 0.15);
+  --line-strong: rgba(128, 128, 255, 0.34);
+  --tick: rgba(128, 128, 255, 0.75);
+  --text: #e6e6ff;
+  --text-rgb: 230, 230, 255;
+  --text-2: #a3a3d4;
+  --text-3: #6e6ea0;
+  --accent: #ff8080;  /* +X */
+}
+
+:root[data-palette='normals'] .display { color: #8f8fff; }  /* +Z, facing you */
+:root[data-palette='normals'] .fx-on .display {
+  text-shadow: -0.6px 0 rgba(255, 128, 128, 0.55), 0.6px 0 rgba(128, 255, 128, 0.45);
+}
+
+/* up +Y mint, right +X salmon, down −Y purple, left −X teal */
+:root[data-palette='normals'] .monitor {
+  outline: none;
+  border: 2px solid;
+  border-color: #80ff80 #ff8080 #800080 #008080;
+}
+
+/* Plate: the sky as a survey plate. The canvas is printed as a negative (black
+   stars and dark halos on grey glass), the windows carry the réseau grid
+   exposed onto plates for measuring positions, and the marks are red pencil. */
+:root[data-palette='plate'] {
+  --bg: #dfe1e0;
+  --bg-rgb: 223, 225, 224;
+  --panel: rgba(231, 233, 232, 0.96);
+  --panel-raise: rgba(0, 0, 0, 0.03);
+  --surface: rgba(10, 12, 14, 0.035);
+  --surface-hover: rgba(10, 12, 14, 0.07);
+  --surface-sunk: rgba(10, 12, 14, 0.05);
+  --line: rgba(10, 12, 14, 0.15);
+  --line-strong: rgba(10, 12, 14, 0.4);
+  --tick: rgba(10, 12, 14, 0.75);
+  --text: #0c0e10;
+  --text-rgb: 12, 14, 16;
+  --text-2: #3e4347;
+  --text-3: #6a7074;
+  --accent: #c81e2a;
+}
+
+:root[data-palette='plate'] .stage canvas { filter: invert(1) grayscale(1) contrast(1.12); }
+/* on a light plate the CRT's dark scanlines read as ruled paper: thinner,
+   and its grain turns dark, like emulsion */
+:root[data-palette='plate'] .crt { background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.055) 0 1px, transparent 1px 3px); }
+:root[data-palette='plate'] .crt::before { filter: invert(1); opacity: 0.1; }
+/* Optics on glass: inks dark enough to read, and a light vignette */
+:root[data-palette='plate'] .optics {
+  --night-ink: #27358c;
+  --night-wash: rgba(39, 53, 140, 0.1);
+  --day-ink: #94480c;
+  --day-wash: rgba(148, 72, 12, 0.08);
+}
+:root[data-palette='plate'] .wall-view::after { background: none; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.12); }
+:root[data-palette='plate'] .fx-on .display {
+  text-shadow: -0.6px 0 rgba(200, 30, 42, 0.35), 0.6px 0 rgba(10, 12, 14, 0.25);
+}
+
+:root[data-palette='plate'] .monitor {
+  background:
+    linear-gradient(var(--tick), var(--tick)) top left / 12px 1px no-repeat,
+    linear-gradient(var(--tick), var(--tick)) top left / 1px 12px no-repeat,
+    linear-gradient(var(--tick), var(--tick)) bottom right / 12px 1px no-repeat,
+    linear-gradient(var(--tick), var(--tick)) bottom right / 1px 12px no-repeat,
+    linear-gradient(rgba(10, 12, 14, 0.075) 1px, transparent 1px) 0 0 / 100% 48px,
+    linear-gradient(90deg, rgba(10, 12, 14, 0.075) 1px, transparent 1px) 0 0 / 48px 100%,
+    var(--panel);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+}
+
+/* Sodium: a night lit by low-pressure sodium lamps. They give one wavelength,
+   so nothing has a hue of its own: the canvas is filtered to amber, the type
+   is the stencil used for block numbers, and each window is a prefab concrete
+   wall with its panel joints, lit from a lamp above. */
+:root[data-palette='sodium'] {
+  --bg: #0d0a06;
+  --bg-rgb: 13, 10, 6;
+  --panel: rgba(21, 16, 10, 0.96);
+  --panel-raise: rgba(255, 176, 64, 0.035);
+  --surface: #17110a;
+  --surface-hover: #1f170d;
+  --surface-sunk: #120d07;
+  --line: rgba(255, 176, 64, 0.13);
+  --line-strong: rgba(255, 176, 64, 0.3);
+  --tick: rgba(255, 196, 110, 0.6);
+  --text: #ffd08a;
+  --text-rgb: 255, 208, 138;
+  --text-2: #c38f4e;
+  --text-3: #8d673a;
+  --accent: #ffb030;
+  --font-display: 'Big Shoulders Stencil', 'Arial Narrow', sans-serif;
+}
+
+:root[data-palette='sodium'] .stage canvas { filter: grayscale(1) sepia(1) saturate(2.6) hue-rotate(-10deg) brightness(0.92); }
+:root[data-palette='sodium'] .display { font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; }
+:root[data-palette='sodium'] .fx-on .display {
+  text-shadow: -0.6px 0 rgba(255, 120, 30, 0.45), 0.6px 0 rgba(255, 220, 120, 0.3);
+}
+
+:root[data-palette='sodium'] .monitor {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% -8%, rgba(255, 170, 60, 0.13), transparent 70%),
+    linear-gradient(rgba(255, 190, 100, 0.05) 1px, transparent 1px) 0 4px / 100% 210px,
+    linear-gradient(rgba(0, 0, 0, 0.5) 2px, transparent 2px) 0 0 / 100% 210px,
+    linear-gradient(90deg, rgba(0, 0, 0, 0.5) 2px, rgba(255, 190, 100, 0.04) 2px, transparent 3px) 0 0 / 300px 100%,
+    var(--panel);
+  outline-color: rgba(255, 176, 64, 0.2);
+}
+
+/* ───────────── theme switches ─────────────
+   Driven from src/lib/themeTransitions.js. The default cross-fade is off; each
+   theme animates the old and new pictures itself (clip-paths and filters,
+   built in JS since they depend on the window size). */
+:root[data-theme-switch]::view-transition-old(root),
+:root[data-theme-switch]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Phosphor: light adds up, so the old picture's afterglow shows through the new one */
+:root[data-theme-switch='phosphor']::view-transition-new(root) { mix-blend-mode: screen; }
+
+/* things that ride along in the new view during a switch */
+.theme-fx {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* Signal's scan line */
+.theme-fx--scan {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  margin-top: -2px;
+  background: #ffd2bd;
+  box-shadow: 0 0 6px 1px #ff6a3d, 0 0 24px 4px rgba(255, 106, 61, 0.55);
+}
+
+/* Normals' render bucket: corner brackets around the tile being drawn */
+.theme-fx--bucket {
+  left: 0;
+  top: 0;
+  --c: #ff8080;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 14px no-repeat;
 }
 
 /* ───────────── 3D monitor panel ───────────── */
@@ -1925,10 +2096,16 @@ body:has(.crt-startup) { background: #000; }
   transition: color 0.2s ease, opacity 0.6s ease;
 }
 
-.imm-credit:hover { color: var(--text); }
+.imm-credit { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.imm-credit a { transition: color 0.2s ease; }
+.imm-credit a:hover { color: var(--text); }
+
+/* with a piece on the piano the position slider takes another row: move up over it */
+.immersive-ui.has-track .imm-credit { bottom: calc(max(20px, env(safe-area-inset-bottom)) + 88px); }
 
 @media (max-width: 640px) {
-  .imm-credit { top: auto; bottom: 108px; right: auto; left: 16px; }
+  .imm-credit { top: auto; bottom: 108px; right: auto; left: 16px; align-items: flex-start; }
+  .immersive-ui.has-track .imm-credit { bottom: 152px; }
 }
 
 .imm-hint {
@@ -1974,6 +2151,56 @@ body:has(.crt-startup) { background: #000; }
 .imm-time { color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .imm-controls { display: flex; align-items: center; gap: 18px; }
+
+/* Position slider: a row of its own above the title, over a strip of how busy
+   each stretch of the piece is; the played part is in the accent */
+.imm-seek {
+  position: relative;
+  flex: none;
+  width: 100%;
+  height: 26px;
+  margin-bottom: 2px;
+}
+
+.seek-bars { position: absolute; inset: 0; pointer-events: none; }
+
+.seek-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.seek-layer span { flex: 1; min-width: 0; background: var(--line-strong); }
+.seek-played span { background: var(--accent); }
+
+.imm-seek input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.imm-seek input[type='range']::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.imm-seek input[type='range']::-moz-range-track { height: 100%; background: transparent; }
+
+.imm-seek input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 2px;
+  height: 26px;
+  background: var(--text);
+  border: 0;
+  box-shadow: 0 0 0 1px rgba(var(--bg-rgb), 0.6);
+}
+
+.imm-seek input[type='range']::-moz-range-thumb { width: 2px; height: 26px; background: var(--text); border: 0; border-radius: 0; }
+.imm-seek input[type='range']:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
 
 .record-label {
   display: flex;
