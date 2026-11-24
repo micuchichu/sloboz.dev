@@ -8,7 +8,7 @@ import SketchFrame from './SketchFrame';
 // World units per CSS pixel for drei <Html transform distanceFactor={6}>
 export const MONITOR_PX_TO_WORLD = 6 / 400;
 
-export default function Monitor({ position, rotation, children, width = 900, height = 500, scrollable = true, index, label, meta }) {
+export default function Monitor({ position, rotation, children, width = 900, height = 500, scrollable = true, index, label, meta, backdrop, clear = false }) {
   const groupRef = useRef();
   const containerRef = useRef();
   const worldPos = useMemo(() => new THREE.Vector3(), []);
@@ -36,7 +36,7 @@ export default function Monitor({ position, rotation, children, width = 900, hei
     }
   });
 
-  const className = ['monitor', width < 600 && 'monitor--compact', !scrollable && 'monitor--static'].filter(Boolean).join(' ');
+  const className = ['monitor', width < 600 && 'monitor--compact', !scrollable && 'monitor--static', clear && 'monitor--clear'].filter(Boolean).join(' ');
 
   return (
     <group ref={groupRef} position={position} rotation={rotation}>
@@ -54,6 +54,8 @@ export default function Monitor({ position, rotation, children, width = 900, hei
           onWheel={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
+          {/* anything a station draws around its panel (behind it, or past its edges) */}
+          {backdrop}
           <div className={className}>
             <div className="monitor-head">
               <span>

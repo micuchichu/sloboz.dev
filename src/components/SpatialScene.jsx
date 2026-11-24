@@ -19,7 +19,13 @@ const loadAcoustics = () => import('./AcousticsWorld');
 const AcousticsWorld = lazy(loadAcoustics);
 const AcousticsOverlay = lazy(() => import('./AcousticsOverlay'));
 const MiniPlayer = lazy(() => import('./MiniPlayer'));
+const SweeperPage = lazy(() => import('./SweeperPage'));
+const SweeperSpace = lazy(() => import('./SweeperSpace'));
+const SweeperField = lazy(() => import('./SweeperField'));
 const IMMERSIVE = 6; // station id with no panel and no HUD
+const SWEEPER = 7;   // the game's station: its panel sits left, the game's pieces float on the right
+// its map node fades through the game's player colours, starting from purple
+const SWEEPER_COLORS = ['#a46bff', '#ff5fae', '#ff7a3d', '#5be06f', '#34d8ef'];
 
 const CAMERA_FOV = 60;
 const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV) / 2);
@@ -278,6 +284,8 @@ function ConstellationLines({ stations }) {
       stations[5], stations[2], // Monopoly -> Optics
       stations[0], stations[6], // Core -> Acoustics
       stations[6], stations[2], // Acoustics -> Optics
+      stations[0], stations[7], // Core -> Minesweeper
+      stations[7], stations[1], // Minesweeper -> Deployments (it's one of the projects)
     ];
     return new THREE.BufferGeometry().setFromPoints(points);
   }, [stations]);
@@ -292,11 +300,52 @@ function ConstellationLines({ stations }) {
 }
 
 
-function ConstellationBeacon({ position, onClick, label, index, size = 5 }) {
+// cycle: colours to fade through instead of the palette's beacon colour;
+// children: anything that should move with the node (e.g. an orbiting ship)
+// One of the game's merchant ships circling a map node. The sprite is turned
+// every frame to point the way it's flying as seen on screen, whatever the
+// map camera's angle.
+const ORBIT_SHIP = './minesweeper/sprites/ship-small.png';
+function OrbitingShip({ radius = 10, speed = 0.55 }) {
+  const texture = useMemo(() => {
+    const t = new THREE.TextureLoader().load(ORBIT_SHIP);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.generateMipmaps = false;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+  useEffect(() => () => texture.dispose(), [texture]);
+  const ref = useRef();
+  const tmp = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), w: new THREE.Vector3() }), []);
+  const tilt = useMemo(() => new THREE.Euler(0.45, 0, 0.25), []);
+  const at = (angle, out) => out.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius).applyEuler(tilt);
+  useFrame(({ clock, camera, size }) => {
+    const s = ref.current;
+    if (!s) return;
+    const angle = clock.elapsedTime * speed;
+    at(angle, s.position);
+    // direction of travel on screen: project this point and one a little further on
+    s.parent.localToWorld(tmp.a.copy(s.position)).project(camera);
+    s.parent.localToWorld(at(angle + 0.05, tmp.b)).project(camera);
+    s.material.rotation = Math.atan2((tmp.b.y - tmp.a.y) * size.height, (tmp.b.x - tmp.a.x) * size.width);
+  });
+  return (
+    <sprite ref={ref} scale={[22, 11, 1]}>
+      <spriteMaterial map={texture} transparent depthWrite={false} />
+    </sprite>
+  );
+}
+
+function ConstellationBeacon({ position, onClick, label, index, size = 5, cycle, children }) {
   const palette = usePalette();
   const meshRef = useRef();
   const wireRef = useRef();
   const groupRef = useRef();
+  const coreMat = useRef();
+  const wireMat = useRef();
+  const cycleColors = useMemo(() => cycle?.map((c) => new THREE.Color(c)), [cycle]);
+  const mixed = useMemo(() => new THREE.Color(), []);
   const [hovered, setHovered] = useState(false);
   const targetScaleVec = useMemo(() => new THREE.Vector3(1, 1, 1), []);
   const wireScaleVec = useMemo(() => new THREE.Vector3(1, 1, 1), []);
@@ -310,6 +359,15 @@ function ConstellationBeacon({ position, onClick, label, index, size = 5 }) {
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1);
     const t = 1 - Math.exp(-6 * dt);
+    if (cycleColors && coreMat.current && wireMat.current) {
+      // fade from one colour to the next, about two seconds each
+      const p = (state.clock.elapsedTime / 2) % cycleColors.length;
+      const i = Math.floor(p), f = p - i;
+      const ease = f * f * (3 - 2 * f);
+      mixed.copy(cycleColors[i]).lerp(cycleColors[(i + 1) % cycleColors.length], ease);
+      coreMat.current.color.copy(mixed);
+      wireMat.current.color.copy(mixed);
+    }
     if (meshRef.current) {
       meshRef.current.rotation.x += dt * (hovered ? 1.0 : 0.4);
       meshRef.current.rotation.y += dt * (hovered ? 1.4 : 0.6);
@@ -356,14 +414,15 @@ function ConstellationBeacon({ position, onClick, label, index, size = 5 }) {
       {/* Solid rotating core */}
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[size, 0]} />
-        <meshBasicMaterial color={hovered ? palette.accent : palette.beacon} />
+        <meshBasicMaterial ref={coreMat} color={hovered ? palette.accent : palette.beacon} />
       </mesh>
 
       {/* Glowing outer wireframe */}
       <mesh ref={wireRef}>
         <icosahedronGeometry args={[size * 1.15, 0]} />
-        <meshBasicMaterial color={hovered ? palette.accent : palette.beacon} transparent opacity={hovered ? 0.7 : 0.25} wireframe />
+        <meshBasicMaterial ref={wireMat} color={hovered ? palette.accent : palette.beacon} transparent opacity={hovered ? 0.7 : 0.25} wireframe />
       </mesh>
+      {children}
 
       {label && (
         <Html
@@ -557,12 +616,13 @@ const STATIONS = [
   { id: 0, idx: '02', name: 'Core', meta: 'Profile', pos: [0, 0, 0], rot: [0, 0, 0], size: 5 },
   { id: 1, idx: '03', name: 'Deployments', short: 'Work', meta: 'Selected work', pos: [180, 60, -120], rot: [0, -0.1, 0], size: 5 },
   { id: 2, idx: '01', name: 'Optics', meta: 'Photography', pos: [-150, -40, -160], rot: [0, 0.1, 0], size: 5 },
-  { id: 3, idx: '05', name: 'Sun', meta: 'Sol · G2V', pos: [-60, -40, 40], rot: [0, 0.1, 0], size: 2.5, widget: 'sun' },
-  { id: 4, idx: '06', name: 'Weather', meta: 'In development', pos: [70, 75, -40], rot: [-0.1, -0.1, 0], size: 2.5, widget: 'weather' },
-  { id: 5, idx: '07', name: 'Monopoly', meta: 'In development', pos: [110, -50, -160], rot: [0.1, 0.1, 0], size: 2.5, widget: 'monopoly' },
+  { id: 3, idx: '06', name: 'Sun', meta: 'Sol · G2V', pos: [-60, -40, 40], rot: [0, 0.1, 0], size: 2.5, widget: 'sun' },
+  { id: 4, idx: '07', name: 'Weather', meta: 'In development', pos: [70, 75, -40], rot: [-0.1, -0.1, 0], size: 2.5, widget: 'weather' },
+  { id: 5, idx: '08', name: 'Monopoly', meta: 'In development', pos: [110, -50, -160], rot: [0.1, 0.1, 0], size: 2.5, widget: 'monopoly' },
   { id: 6, idx: '04', name: 'Acoustics', short: 'Sound', meta: 'MIDI recordings', pos: [-120, 80, -60], rot: [0, 0.08, 0], size: 4 },
+  { id: 7, idx: '05', name: 'Minesweeper', short: 'Game', meta: 'ND Minesweeper · v1.0.0', pos: [130, -40, 5], rot: [0, 0, 0], size: 4 },
 ];
-const NAV_ORDER = [2, 0, 1, 6];
+const NAV_ORDER = [2, 0, 1, 6, 7];
 
 // drei's <Html transform> panels live inside an overflow:hidden wrapper. When a
 // control inside a panel takes focus, the browser "scrolls it into view" by
@@ -630,6 +690,13 @@ function StationContent({ station, onBack }) {
     return (
       <Suspense fallback={null}>
         <OpticsArchive />
+      </Suspense>
+    );
+  }
+  if (station.id === SWEEPER) {
+    return (
+      <Suspense fallback={null}>
+        <SweeperPage />
       </Suspense>
     );
   }
@@ -705,8 +772,18 @@ export default function SpatialScene() {
       isMobile ? [380, 680] : [1000, 800],  // Deployments
       isMobile ? [380, 680] : [1200, 800],  // Optics
       widget, widget, widget,
+      null,                                 // Acoustics has no panel
+      isMobile ? [380, 680] : [1440, 760],  // Minesweeper: the panel plus the space beside it
     ];
   }, [isMobile]);
+  // The Minesweeper panel itself, shifted left so the space on its right is free for the game's pieces
+  const sweeperPanel = isMobile ? [380, 680] : [860, 760];
+  const sweeperShift = isMobile ? 0 : -((1440 - 860) / 2) * MONITOR_PX_TO_WORLD;
+  // ...and that space's middle, where the N-cube floats
+  // (the frame is 1440 px wide around the station's centre; the panel fills its left 860)
+  const sweeperCube = useMemo(() => (isMobile ? [0, 0, -9] : [(860 + (1440 - 860) / 2 - 1440 / 2) * MONITOR_PX_TO_WORLD, 0.3, 0]), [isMobile]);
+  const [sawSweeper, setSawSweeper] = useState(false);
+  useEffect(() => { if (station === SWEEPER) setSawSweeper(true); }, [station]);
 
   const goToMap = () => setStation(CONSTELLATION);
 
@@ -877,24 +954,38 @@ export default function SpatialScene() {
                 index={s.idx}
                 label={s.name}
                 size={s.size}
+                cycle={s.id === SWEEPER ? SWEEPER_COLORS : undefined}
                 onClick={() => setStation(s.id)}
-              />
+              >
+                {s.id === SWEEPER && <OrbitingShip radius={s.size * 4.6} />}
+              </ConstellationBeacon>
             )}
             {s.id === IMMERSIVE && (
               <Suspense fallback={null}>
                 <AcousticsWorld active={station === IMMERSIVE} />
               </Suspense>
             )}
+            {s.id === SWEEPER && sawSweeper && (
+              <Suspense fallback={null}>
+                <SweeperSpace isMobile={isMobile} center={sweeperCube} />
+              </Suspense>
+            )}
             {station === s.id && s.id !== IMMERSIVE && (
               <Monitor
-                position={[0, 0, 0]}
+                position={s.id === SWEEPER ? [sweeperShift, 0, 0] : [0, 0, 0]}
                 rotation={s.rot}
-                width={monitorSizes[s.id][0]}
-                height={monitorSizes[s.id][1]}
+                width={s.id === SWEEPER ? sweeperPanel[0] : monitorSizes[s.id][0]}
+                height={s.id === SWEEPER ? sweeperPanel[1] : monitorSizes[s.id][1]}
                 scrollable={!s.widget && s.id !== 2} // Optics pans its own wall
                 index={s.idx}
                 label={s.name}
                 meta={s.meta}
+                clear={s.id === SWEEPER}
+                backdrop={s.id === SWEEPER && (
+                  <Suspense fallback={null}>
+                    <SweeperField width={sweeperPanel[0]} height={sweeperPanel[1]} compact={isMobile} />
+                  </Suspense>
+                )}
               >
                 <StationContent station={s} onBack={goToMap} />
               </Monitor>

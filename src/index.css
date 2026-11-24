@@ -285,10 +285,19 @@ ul { list-style: none; }
   .hud-actions { gap: 6px; }
   .chip-btn { padding: 0 9px; }
   .palette-name { display: none; }
-  .hud-nav { justify-self: start; gap: 16px; }
-  .nav-item { font-size: 0.7rem; letter-spacing: 0.08em; }
+  .hud-nav { justify-self: start; gap: 12px; }
+  .nav-item { font-size: 0.7rem; letter-spacing: 0.05em; }
   .nav-item .idx { display: none; }
   .hud-bottom { display: none; }
+}
+
+/* five sections on a narrow phone: a little tighter still */
+@media (max-width: 400px) {
+  .hud-top { padding-left: 12px; padding-right: 12px; }
+  .hud-nav { gap: 9px; }
+  .nav-item { font-size: 0.64rem; letter-spacing: 0.03em; }
+  .hud-actions { gap: 4px; }
+  .chip-btn { padding: 0 7px; }
 }
 
 /* Beacon labels on the system map */
@@ -2086,6 +2095,242 @@ body:has(.crt-startup) { background: #000; }
 .immersive-ui.is-visible > .imm-hint { pointer-events: none; }
 
 /* Sits just above the bottom controls, out of the header's way */
+/* ───────────── Minesweeper station ─────────────
+   The game's own amber for this page, its pixel lettering for small labels, and
+   its pixel art drawn crisp. Black and white palettes keep their greys. */
+.sweeper {
+  --ms: #f2a93b;
+  --ms-dim: rgba(242, 169, 59, 0.16);
+  --ms-font: 'Silkscreen', var(--font-mono);
+}
+
+:root[data-palette='mono'] .sweeper,
+:root[data-palette='sketch'] .sweeper,
+:root[data-palette='plate'] .sweeper { --ms: var(--accent); --ms-dim: var(--surface-hover); }
+
+.sweeper .px { image-rendering: pixelated; }
+
+.sw-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--ms-font);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ms);
+}
+
+.sw-head h2 { font-size: clamp(2.8rem, 7vw, 4.2rem); line-height: 0.9; margin: 12px 0 14px; }
+.sw-lede { max-width: 52ch; font-size: 0.95rem; line-height: 1.6; color: var(--text-2); }
+
+.sw-get { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; margin-top: 22px; }
+
+.sw-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 14px;
+  color: var(--bg);
+  background: var(--ms);
+  border: 1px solid var(--ms);
+  transition: filter 0.2s ease, transform 0.2s var(--ease-out);
+}
+
+.sw-dl:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.sw-dl span { display: flex; flex-direction: column; font-family: var(--ms-font); font-size: 0.9rem; line-height: 1.1; }
+.sw-dl em { font-style: normal; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; opacity: 0.75; text-transform: uppercase; }
+
+.sw-links { display: flex; flex-direction: column; justify-content: center; gap: 6px; margin-left: 8px; }
+
+.sw-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  transition: color 0.2s ease;
+}
+
+.sw-links a:hover { color: var(--ms); }
+
+.sw-note { margin-top: 12px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; color: var(--text-3); }
+
+.sw-block { margin-top: 38px; padding-top: 22px; border-top: 1px solid var(--line); }
+
+.sw-h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-bottom: 16px;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 400;
+}
+
+.sw-wip { font-family: var(--ms-font); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ms); }
+
+/* ── the board ── */
+.nboard { --cell: 30px; }
+.nboard--3d { --cell: 26px; }
+.nboard--4d { --cell: 24px; }
+
+.nb-dims { display: flex; width: max-content; margin-bottom: 14px; border: 1px solid var(--line-strong); }
+
+.nb-dims button {
+  min-width: 52px;
+  height: 30px;
+  font-family: var(--ms-font);
+  font-size: 0.74rem;
+  color: var(--text-3);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.nb-dims button + button { border-left: 1px solid var(--line-strong); }
+.nb-dims button:hover { color: var(--text); }
+.nb-dims button[aria-selected='true'] { color: var(--bg); background: var(--ms); }
+
+.nb-board { display: inline-block; }
+.nb-rows { display: flex; flex-direction: column; gap: 12px; }
+.nb-row { display: flex; align-items: center; gap: 14px; }
+.nb-grid { display: grid; gap: 2px; }
+
+.nb-axis {
+  font-family: var(--ms-font);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.nb-axis--z { display: flex; gap: 14px; margin: 0 0 6px; }
+.nboard--4d .nb-axis--z { padding-left: 34px; }
+.nb-axis--z span { width: calc(var(--x, 3) * var(--cell) + (var(--x, 3) - 1) * 2px); }
+.nboard--3d .nb-axis--z span { --x: 5; }
+.nb-axis--w { width: 20px; }
+
+.nb-cell {
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  font-family: var(--ms-font);
+  font-size: 0.72rem;
+  color: var(--text-2);
+  background: var(--surface-hover);
+  border: 1px solid var(--line-strong);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.nb-cell.is-open { background: transparent; border-color: var(--line); }
+.nb-cell[data-n='2'] { color: var(--text); }
+.nb-cell[data-n='3'], .nb-cell[data-n='4'], .nb-cell[data-n='5'], .nb-cell[data-n='6'],
+.nb-cell[data-n='7'], .nb-cell[data-n='8'] { color: var(--ms); }
+.nb-cell.is-mine { color: var(--ms); }
+.nb-cell.is-near { border-color: var(--ms); background: color-mix(in srgb, var(--ms) 16%, var(--surface-hover)); }
+.nb-cell.is-open.is-near { background: color-mix(in srgb, var(--ms) 10%, transparent); }
+.nb-cell.is-hover { border-color: var(--ms); box-shadow: inset 0 0 0 1px var(--ms); }
+
+/* the game's own flag, first frame of its waving sheet */
+.nb-flag,
+.sw-crew-flag {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: url('/minesweeper/sprites/flag-red.png') 0 0 / 300% 100% no-repeat;
+  image-rendering: pixelated;
+}
+
+.nb-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+
+.nb-foot button {
+  height: 26px;
+  padding: 0 10px;
+  font-family: var(--ms-font);
+  font-size: 0.64rem;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+}
+
+.nb-foot button:hover { color: var(--ms); border-color: var(--ms); }
+
+/* ── numbers ── */
+.sw-numbers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.sw-numbers div { display: flex; flex-direction: column; gap: 6px; }
+.sw-numbers strong { font-family: var(--ms-font); font-size: 1.5rem; font-weight: 400; color: var(--ms); }
+.sw-numbers span { font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
+
+/* ── together ── */
+.sw-mp p { max-width: 58ch; font-size: 0.88rem; line-height: 1.6; color: var(--text-2); }
+.sw-crew { display: flex; align-items: flex-end; gap: 10px; margin-top: 16px; }
+.sw-blob { animation: sw-bob 1.6s ease-in-out infinite; animation-delay: calc(var(--i) * -0.2s); }
+
+@keyframes sw-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -4px; }
+}
+
+.sw-crew .sw-crew-flag { width: 32px; height: 32px; animation: sw-wave 0.5s steps(3) infinite; }
+.sw-crew-flag--jade { background-image: url('/minesweeper/sprites/flag-jade.png'); animation-delay: -0.2s !important; }
+
+@keyframes sw-wave {
+  from { background-position: 0 0; }
+  to { background-position: 150% 0; }
+}
+
+.sw-kicker-flag { animation: sw-wave 0.5s steps(3) infinite; }
+
+/* ── campaign ── */
+.sw-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.sw-shots figure { margin: 0; }
+
+.sw-shots img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 10 / 9;
+  object-fit: cover;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-sunk);
+}
+
+.sw-shots figcaption { margin-top: 8px; font-size: 0.78rem; line-height: 1.5; color: var(--text-2); }
+.sw-shots figcaption b { display: block; margin-bottom: 2px; font-family: var(--ms-font); font-size: 0.66rem; font-weight: 400; text-transform: uppercase; color: var(--ms); }
+
+/* ── controls and credits ── */
+.sw-controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 18px; }
+.sw-controls dt { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
+.sw-controls dd { margin-top: 3px; font-family: var(--ms-font); font-size: 0.72rem; color: var(--text); }
+.sw-credits { margin-top: 18px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; color: var(--text-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-blob, .sw-crew .sw-crew-flag, .sw-kicker-flag { animation: none; }
+}
+
+@container (max-width: 600px) {
+  .nboard { --cell: 26px; }
+  .nboard--3d { --cell: 19px; }
+  .nboard--4d { --cell: 21px; }
+  .nb-row { gap: 8px; }
+  .nb-axis--z { gap: 8px; }
+  .sw-numbers { grid-template-columns: 1fr; }
+  .sw-shots { grid-template-columns: 1fr; }
+  .sw-links { flex-direction: row; margin-left: 0; gap: 14px; }
+}
+
 /* ───────────── Mini player (outside the piano room) ─────────────
    Sits above the bottom-right readout, in the HUD's own language: mono labels,
    hairlines, the theme's accent for what's playing. */
@@ -2426,4 +2671,97 @@ body:has(.crt-startup) { background: #000; }
   .imm-bottom { flex-direction: column; align-items: flex-start; }
   .imm-title { font-size: 1.1rem; }
   .imm-hint { top: 16%; font-size: 0.64rem; }
+}
+
+/* ── the board behind the Minesweeper panel ── */
+.monitor--clear { background-color: transparent; }
+
+.swf-under,
+.swf-over { position: absolute; inset: 0; pointer-events: none; }
+.swf-over { z-index: 2; }
+.swf-board { position: absolute; image-rendering: pixelated; }
+
+.swf-decor {
+  position: absolute;
+  background: center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+
+.swf-decor--flag { background-size: 300% 100%; background-position: 0 0; animation: sw-wave 0.5s steps(3) infinite; }
+.swf-spin { animation: swf-spin 60s linear infinite; }
+.swf-dock { animation: swf-dock 4s ease-in-out infinite; }
+
+@keyframes swf-spin { to { rotate: 360deg; } }
+@keyframes swf-dock { 50% { translate: 0 -3px; } }
+
+.swf-player {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0;
+  pointer-events: auto;
+  cursor: crosshair;
+  transform-origin: 50% 75%;
+  will-change: transform;
+}
+
+.swf-player img { display: block; width: 100%; height: 100%; transition: filter 0.15s ease; }
+.swf-player:hover img { filter: brightness(1.35) drop-shadow(0 0 3px rgba(255, 255, 255, 0.5)); }
+.swf-player.is-down { visibility: hidden; pointer-events: none; }
+
+.swf-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  transform-origin: 50% 50%;
+}
+
+.swf-bit {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--c);
+  animation: swf-bit 0.65s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes swf-bit { to { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; } }
+
+.swf-ring {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border: 2px solid var(--c);
+  border-radius: 50%;
+  animation: swf-ring 0.45s ease-out forwards;
+}
+
+@keyframes swf-ring { from { transform: scale(0.2); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+
+.swf-scrap { position: absolute; image-rendering: pixelated; animation: swf-scrap 4s ease-in forwards; }
+@keyframes swf-scrap { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* the page ends clear of the pieces sitting on its bottom corners */
+.sweeper { padding-bottom: 56px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .swf-decor--flag, .swf-spin, .swf-dock { animation: none; }
+}
+
+/* the station's placeholder until its full page is public */
+.sweeper--wip { display: flex; align-items: center; min-height: 100%; padding-bottom: 0; }
+.monitor-body:has(.sweeper--wip) { display: flex; flex-direction: column; }
+.monitor-body:has(.sweeper--wip) > .sweeper--wip { flex: 1; }
+.sw-wip-body .sw-lede { margin-top: 4px; }
+.sw-wip-hint {
+  margin-top: 34px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
 }
