@@ -21,6 +21,9 @@ export const ROOMS = {
 };
 
 const LOOKAHEAD = 0.3;   // seconds of notes scheduled ahead
+// In a background browser tab timers fire about once a second at best, so the
+// music keeps going by queueing further ahead while the page is hidden
+const HIDDEN_LOOKAHEAD = 3;
 // Dynamics: a key struck as hard as the loudest note in the piece plays at PEAK;
 // every step softer drops on a decibel scale, DYN_DB down at the faintest touch.
 // A real piano spans roughly 30–40 dB from pianissimo to fortissimo.
@@ -339,7 +342,7 @@ export class PianoEngine {
   schedule() {
     if (!this.playing) return;
     const songNow = this.ctx.currentTime - this.startedAt;
-    const horizon = songNow + LOOKAHEAD;
+    const horizon = songNow + (document.hidden ? HIDDEN_LOOKAHEAD : LOOKAHEAD);
     while (this.cursor < this.notes.length && this.notes[this.cursor].start < horizon) {
       this.voice(this.notes[this.cursor], this.notes[this.cursor].start, 1);
       this.cursor++;

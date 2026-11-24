@@ -18,6 +18,7 @@ const OpticsArchive = lazy(loadOptics);
 const loadAcoustics = () => import('./AcousticsWorld');
 const AcousticsWorld = lazy(loadAcoustics);
 const AcousticsOverlay = lazy(() => import('./AcousticsOverlay'));
+const MiniPlayer = lazy(() => import('./MiniPlayer'));
 const IMMERSIVE = 6; // station id with no panel and no HUD
 
 const CAMERA_FOV = 60;
@@ -684,6 +685,9 @@ function playCrtSound(name, fade = null) {
 export default function SpatialScene() {
   const palette = usePalette();
   const [station, setStation] = useState(0);
+  // The mini player only matters once the piano room has been opened
+  const [heardPiano, setHeardPiano] = useState(false);
+  useEffect(() => { if (station === IMMERSIVE) setHeardPiano(true); }, [station]);
   const [fx, setFx] = useState(readFxPref);
   const { isMobile, isLowEnd, reducedMotion } = useDeviceCapabilities();
   const activeRef = useRef(true);
@@ -816,6 +820,12 @@ export default function SpatialScene() {
       {station === IMMERSIVE && (
         <Suspense fallback={null}>
           <AcousticsOverlay onExit={goToMap} />
+        </Suspense>
+      )}
+      {/* Outside the piano room, a small player for whatever is on the piano */}
+      {heardPiano && station !== IMMERSIVE && (
+        <Suspense fallback={null}>
+          <MiniPlayer />
         </Suspense>
       )}
 

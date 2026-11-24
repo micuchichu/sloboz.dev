@@ -804,8 +804,8 @@ export default function AcousticsWorld({ active }) {
   useEffect(() => { if (active) setVisited(true); }, [active]);
 
   useEffect(() => { acoustics.load(); }, []);
-  // Leaving the station stops the music
-  useEffect(() => { if (!active && acoustics.get().playing) acoustics.pause(); }, [active]);
+  // The music keeps playing when you leave the station; the mini player
+  // (MiniPlayer.jsx) takes over its controls everywhere else
 
   // Dark stage: fade everything far from the piano into black while here
   const fog = useRef({ far: 6000 });
