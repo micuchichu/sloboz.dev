@@ -207,16 +207,9 @@ function Downloads() {
 function WorkInProgress() {
   return (
     <section className="sweeper sweeper--wip">
-      <div className="sw-head sw-wip-body reveal">
-        <p className="sw-kicker"><span className="sw-crew-flag sw-kicker-flag" aria-hidden="true" />Work in progress</p>
-        <h2 className="display">ND Minesweeper</h2>
-        <p className="sw-lede">
-          This page is still being built. The game isn't waiting on it: {RELEASE.tag} is out
-          for Windows and macOS, with boards in two, three and four dimensions.
-        </p>
-        <Downloads />
-        <p className="sw-note">Portable: unzip and run. The builds are called DimensionSweeper.</p>
-        <p className="sw-wip-hint">Until then, the players on the board around this panel can be knocked out. They come back.</p>
+      <div className="sw-wip-mark reveal">
+        <img className="px sw-wip-ship" src={`${SPRITES}ship-small.png`} width="64" height="32" alt="" draggable={false} />
+        <p className="sw-kicker">Work in progress</p>
       </div>
     </section>
   );
