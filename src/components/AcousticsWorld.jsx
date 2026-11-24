@@ -606,7 +606,8 @@ function Sheet({ index, track, total, active, playingIndex, pianoRef, bodies }) 
 
     const aspect = size.width / size.height;
     // Smaller while floating on narrow (portrait) screens; full size on the desk
-    const fit = onDesk ? 1 : THREE.MathUtils.clamp(aspect / 1.1, 0.6, 1);
+    // (down to half size on a portrait phone, so four sheets still fit round the piano)
+    const fit = onDesk ? 1 : THREE.MathUtils.clamp(aspect / 1.1, 0.5, 1);
     const env = {
       cam: tmp.cam, fwd: tmp.fwd, right: tmp.right, up: tmp.base, aspect, tanHalfFov: TAN_HALF_FOV, index,
       sheetHalfW: (SHEET_W / 2) * fit, sheetHalfH: (SHEET_H / 2) * fit, piano: null, others: [],
